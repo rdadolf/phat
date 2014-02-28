@@ -1,0 +1,20 @@
+
+// Handle type
+
+// Metadata type
+
+// Sequencer type
+
+// Locktype?
+
+Handle getroot();
+Handle open(Handle root, const String subpath);
+Handle mkfile(Handle root, const String subpath, const char *data);
+Handle mkdir(Handle root, const String subpath);
+const char *getcontents(Handle h);
+void putcontents(Handle h, const char *data)
+String readdir(Handle h);
+Metadata stat(Handle f);
+Sequencer flock(Handle f, Locktype lt);
+Sequencer funlock(Handle f);
+void delete(Handle f;)
