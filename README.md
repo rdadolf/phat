@@ -1,13 +1,11 @@
-phat
-----
+# phat
 
 An implementation of the Chubby lock service protocol in MPRPC.
 
-----
-
-**Installation
+## Installation
 
     git clone <phat>
+    cd phat
     git submodule init
     git submodule update
     cd mprpc
@@ -17,7 +15,7 @@ An implementation of the Chubby lock service protocol in MPRPC.
     cd ..
     make
 
-** Running tests
+## Running tests
 
     cd tests
     ./functionality
