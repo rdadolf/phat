@@ -1,12 +1,25 @@
-# placeholder
+.PHONY: default client server
 
+default: client server
+
+# All manner of FLAGS
 TAMERC=mprpc/tamer/compiler/tamer
+CXX=g++
+CXXFLAGS=-Imprpc
+LDFLAGS=
 
-default: phat.cc phat.hh
+# Build rules
+server: phat
+phat: phat.cc phat.hh paxos.cc
 
+client: api.hh
 
-phat.cc: %.cc: %.tcc
+# Suffix rules for files that need TAMING
+%.cc: %.tcc
+	$(TAMERC) -c $<
+%.hh: %.thh
 	$(TAMERC) -c $<
 
-phat.hh: %.hh: %.thh
-	$(TAMERC) -c $<
+# Cleanup
+clean:
+	rm -f phat.cc phat.hh paxos.cc phat

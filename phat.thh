@@ -1,20 +1,25 @@
+#include <string>
 
 // Handle type
+typedef int Handle; // FIXME
 
 // Metadata type
+typedef int Metadata; // FIXME
 
 // Sequencer type
+typedef int Sequencer; // FIXME
 
 // Locktype?
+typedef int Locktype; // FIXME
 
 Handle getroot();
-Handle open(Handle root, const String subpath);
-Handle mkfile(Handle root, const String subpath, const char *data);
-Handle mkdir(Handle root, const String subpath);
+Handle open(Handle root, const std::string subpath);
+Handle mkfile(Handle root, const std::string subpath, const char *data);
+Handle mkdir(Handle root, const std::string subpath);
 const char *getcontents(Handle h);
-void putcontents(Handle h, const char *data)
-String readdir(Handle h);
+void putcontents(Handle h, const char *data);
+std::string readdir(Handle h);
 Metadata stat(Handle f);
 Sequencer flock(Handle f, Locktype lt);
 Sequencer funlock(Handle f);
-void delete(Handle f;)
+void remove(Handle f);

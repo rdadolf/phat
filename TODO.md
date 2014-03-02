@@ -1,0 +1,2 @@
+- How do clients receive notifications?
+- How do we test packet loss/delay/reordering?
