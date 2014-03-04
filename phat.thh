@@ -22,6 +22,7 @@ class Phat {
   public:
     Phat();
     tamed void connect(String host, uint32_t port, tamer::event<> done);
+    tamed void disconnect(tamer::event<> done);
 
     tamed void getRoot(tamer::event<Handle*, int32_t> done);
     tamed void open(Handle* handle, String subpath, 

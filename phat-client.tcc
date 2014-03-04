@@ -1,4 +1,6 @@
 #include "phat.hh"
+#include <tamer/fd.hh>
+#include <netdb.h>
 
 using tamer::event;
 using std::vector;
@@ -9,7 +11,42 @@ Phat::Phat() : mpfd_(nullptr) {
 }
 
 tamed void Phat::connect(String host, uint32_t port, event<> done) {
+    tvars {
+        tamer::fd fd;
+        struct in_addr hostip;
+    }
+
     assert(!mpfd_);
+    assert(host);
+
+    // lookup hostname address
+    {
+        in_addr_t a = inet_addr(host.c_str());
+        if (a != INADDR_NONE)
+            hostip.s_addr = a;
+        else {
+            struct hostent* hp = gethostbyname(host.c_str());
+            if (hp == NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET) {
+                std::cerr << "lookup " << host << ": " << hstrerror(h_errno) << std::endl;
+                return;
+            }
+            hostip = *((struct in_addr*) hp->h_addr);
+        }
+    }
+
+    // connect
+    twait { tamer::tcp_connect(hostip, port, make_event(fd)); }
+    if (!fd) {
+        std::cerr << "connect " << (host ? host : "localhost")
+                  << ":" << port << ": " << strerror(-fd.error()) << std::endl;
+        return;
+    }
+
+    mpfd_ = new msgpack_fd(fd);
+    done();
+}
+
+tamed void Phat::disconnect(event<> done) {
     done();
 }
 
