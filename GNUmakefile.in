@@ -14,9 +14,6 @@ INCLUDES = -include config.h -I$(top_srcdir) -I$(DEPSDIR) -I$(mprpc_srcdir) -I$(
 CPPFLAGS = $(INCLUDES) @CPPFLAGS@
 CXXFLAGS = -W -Wall @CXXFLAGS@
 
-LIBS = $(LIBTAMER) `$(TAMER) -l` @LIBS@ -lpthread -lm
-LDFLAGS = @LDFLAGS@
-
 TAMEDDIR = $(DEPSDIR)
 MPRPC_COMMIT = 34d02038fe6cc7d20ba1d01083130ecc734f98a7
 
@@ -27,7 +24,13 @@ TAMER = mprpc/tamer/compiler/tamer
 TAMERFLAGS = @TAMERFLAGS@
 LIBTAMER = mprpc/tamer/tamer/.libs/libtamer.a
 
+LIBS = `$(TAMER) -l` @LIBS@ -lpthread -lm
+LDFLAGS = @LDFLAGS@
+
 BINARIES = phat-client phat-server
+
+MPRPC_COMMON = string.o straccum.o json.o msgpack.o clp.o compiler.o
+MPRPC_OBJS = $(MPRPC_COMMON:%=$(mprpc_srcdir)/%)
 
 
 all: $(BINARIES)
@@ -47,14 +50,11 @@ $(TAMEDDIR)/%.cc: %.tcc config.h $(DEPSDIR)/stamp $(TAMER)
 $(TAMEDDIR)/%.hh: %.thh config.h $(DEPSDIR)/stamp $(TAMER)
 	$(TAMER) $(TAMERFLAGS) -F $(DEPSDIR)/$*.hh.d -o $@ $<
 
-%.S: %.o
-	objdump -S $< > $@
-
 phat-server: phat-server.o paxos.o $(LIBTAMER)
-	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+	$(CXX) $(CFLAGS) -o $@ $(MPRPC_OBJS) $^ $(LDFLAGS) $(LIBS)
 
-phat-client: phat-client.o paxos.o $(LIBTAMER)
-	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+test: test.o phat-client.o paxos.o $(LIBTAMER)
+	$(CXX) $(CFLAGS) -o $@ $(MPRPC_OBJS) $^ $(LDFLAGS) $(LIBS)
 
 config.h: stamp-h
 
@@ -89,6 +89,7 @@ clean:
 phat-server.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat-server.cc
 phat-client.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat-client.cc
 paxos.o: $(TAMEDDIR)/paxos.cc
+test.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/test.cc 
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d)
 ifneq ($(DEPFILES),)
