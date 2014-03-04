@@ -4,7 +4,7 @@
 namespace phat {
 
     enum {
-        phat_keepalive = 0;
+        phat_keepalive = 0
     };
 
     enum {
