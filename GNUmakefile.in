@@ -1,0 +1,96 @@
+### @configure_input@
+
+AR = ar
+CC = @CC@
+CXX = @CXX@
+
+DEPSDIR := .deps
+DEPCFLAGS = -MD -MF $(DEPSDIR)/$*.d -MP
+top_srcdir = @top_srcdir@
+mprpc_srcdir = $(top_srcdir)/mprpc
+builddir = .
+
+INCLUDES = -include config.h -I$(top_srcdir) -I$(DEPSDIR) -I$(mprpc_srcdir) -I$(mprpc_srcdir)/.deps -I$(mprpc_srcdir)/tamer
+CPPFLAGS = $(INCLUDES) @CPPFLAGS@
+CXXFLAGS = -W -Wall @CXXFLAGS@
+
+LIBS = $(LIBTAMER) `$(TAMER) -l` @LIBS@ -lpthread -lm
+LDFLAGS = @LDFLAGS@
+
+TAMEDDIR = $(DEPSDIR)
+MPRPC_COMMIT = 34d02038fe6cc7d20ba1d01083130ecc734f98a7
+
+CXXCOMPILE = $(CXX) $(DEFS) $(CPPFLAGS) $(CXXFLAGS)
+CXXLINK = $(CXX) $(CXXFLAGS)
+
+TAMER = mprpc/tamer/compiler/tamer
+TAMERFLAGS = @TAMERFLAGS@
+LIBTAMER = mprpc/tamer/tamer/.libs/libtamer.a
+
+
+all: phat
+
+%.o: %.c config.h $(DEPSDIR)/stamp
+	$(CXXCOMPILE) $(DEPCFLAGS) -include config.h -c -o $@ $<
+
+%.o: %.cc config.h $(DEPSDIR)/stamp
+	$(CXXCOMPILE) $(DEPCFLAGS) -include config.h -c -o $@ $<
+
+%.o: $(TAMEDDIR)/%.cc config.h $(DEPSDIR)/stamp
+	$(CXXCOMPILE) $(DEPCFLAGS) -include config.h -c -o $@ $<
+
+$(TAMEDDIR)/%.cc: %.tcc config.h $(DEPSDIR)/stamp $(TAMER)
+	$(TAMER) $(TAMERFLAGS) -F $(DEPSDIR)/$*.cc.d -o $@ $<
+
+$(TAMEDDIR)/%.hh: %.thh config.h $(DEPSDIR)/stamp $(TAMER)
+	$(TAMER) $(TAMERFLAGS) -F $(DEPSDIR)/$*.hh.d -o $@ $<
+
+%.S: %.o
+	objdump -S $< > $@
+
+phat: phat.o paxos.o $(LIBTAMER)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+config.h: stamp-h
+
+GNUmakefile: GNUmakefile.in config.status
+	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+$(top_srcdir)/configure $(top_srcdir)/config.h.in: $(top_srcdir)/configure.ac
+	cd $(top_srcdir) && autoreconf -i && touch config.h.in
+
+config.status: $(top_srcdir)/configure
+	$(top_srcdir)/configure @ac_configure_args@
+
+stamp-h: $(top_srcdir)/config.h.in config.status
+	CONFIG_FILES= $(SHELL) ./config.status
+	echo > stamp-h
+
+$(DEPSDIR)/stamp:
+	mkdir -p $(dir $@)
+	touch $@
+
+mprpc/tamer/compiler/tamer $(LIBTAMER): mprpc-update
+
+mprpc-update:
+	@cd ./`git rev-parse --show-cdup` && cur=`git submodule status mprpc | head -c 41 | tail -c +2` && if test "$$cur" != $(MPRPC_COMMIT) && test -z `cd mprpc; git rev-list -n1 $(MPRPC_COMMIT)..HEAD 2>/dev/null`; then (echo Updating mprpc... 1>&2; cd mprpc; git checkout -f master >/dev/null; git reset --hard $(MPRPC_COMMIT) || exit; cd ..; git submodule update mprpc); fi
+	cd mprpc && $(MAKE)
+
+clean:
+	rm -f phat
+	rm -rf .deps
+
+# tamer dependencies
+phat.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat.cc
+paxos.o: $(TAMEDDIR)/paxos.cc
+
+DEPFILES := $(wildcard $(DEPSDIR)/*.d)
+ifneq ($(DEPFILES),)
+include $(DEPFILES)
+endif
+
+always:
+	@:
+
+.PHONY: all clean always mprpc-update
+.PRECIOUS: $(DEPSDIR)/%.cc $(DEPSDIR)/%.hh

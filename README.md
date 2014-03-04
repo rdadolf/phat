@@ -6,18 +6,12 @@ An implementation of the Chubby lock service protocol in MPRPC.
 
     git clone <phat>
     cd phat
-    git submodule init
-    git submodule update
-    cd mprpc
-    ./bootstrap
+    ./bootstrap.sh
+    autoconf < configure.ac
     ./configure
-    make
-    cd ..
     make
 
 ## Running tests
 
-    cd tests
-    ./functionality
-    ./benchmarks
+    TBD
 
