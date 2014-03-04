@@ -5,6 +5,7 @@
 #include "clp.h"
 
 #include "puppet.hh"
+#include "api.hh"
 
 int chubby_port = 15808;
 
@@ -24,8 +25,6 @@ int main(int argc, char **argv)
   }
 
   puppet_server();
-  //replica_server();
-  //master_server(); // sleeping until consensus says I'm master
 
   tamer::loop();
   tamer::cleanup();

@@ -1,0 +1,11 @@
+#include "mpfd.hh"
+#include "json.hh"
+#include <netdb.h>
+
+tamed void puppet_server()
+{
+  twait {
+    tamer::at_asap(make_event());
+  }
+  printf("puppet\n");
+}
