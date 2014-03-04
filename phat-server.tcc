@@ -10,10 +10,6 @@ namespace phat {
 
 bool quiet = false;
 
-tamed void server(uint32_t port) {
-
-}
-
 tamed void handle_client(tamer::fd cfd) {
     tvars {
         msgpack_fd mpfd(cfd);
@@ -35,6 +31,9 @@ tamed void handle_client(tamer::fd cfd) {
         }
 
         res[0] = -req[0].as_i();
+
+        // look at rpc that was sent and take action
+
         mpfd.write(res);
     }
 
