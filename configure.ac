@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT([phat], [0.1])
-AC_CONFIG_AUX_DIR([mprpc])
+AC_CONFIG_AUX_DIR([mprpc/tamer])
 AC_PREREQ(2.60)
 
 AC_CONFIG_HEADERS([config.h])
