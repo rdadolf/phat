@@ -27,7 +27,7 @@ LIBTAMER = mprpc/tamer/tamer/.libs/libtamer.a
 LIBS = `$(TAMER) -l` @LIBS@ -lpthread -lm
 LDFLAGS = @LDFLAGS@
 
-BINARIES = phat-client phat-server
+BINARIES = phat-server test
 
 MPRPC_COMMON = string.o straccum.o json.o msgpack.o clp.o compiler.o
 MPRPC_OBJS = $(MPRPC_COMMON:%=$(mprpc_srcdir)/%)
