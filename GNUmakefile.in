@@ -29,7 +29,7 @@ LDFLAGS = @LDFLAGS@
 
 BINARIES = phat-server test
 
-MPRPC_COMMON = string.o straccum.o json.o msgpack.o clp.o compiler.o
+MPRPC_COMMON = string.o straccum.o json.o msgpack.o mpfd.o clp.o compiler.o
 MPRPC_OBJS = $(MPRPC_COMMON:%=$(mprpc_srcdir)/%)
 
 
