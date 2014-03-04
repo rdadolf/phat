@@ -1,25 +1,41 @@
-#include <string>
+#ifndef PHAT_HH
+#define PHAT_HH
+#include "string.hh"
+#include <vector>
 
-// Handle type
-typedef int Handle; // FIXME
+namespace phat {
+class Phat;
 
-// Metadata type
-typedef int Metadata; // FIXME
+struct Metadata {
+};
 
-// Sequencer type
-typedef int Sequencer; // FIXME
+struct Sequencer {
+};
 
-// Locktype?
-typedef int Locktype; // FIXME
+enum LockType { write = 0, read = 1 };
 
-Handle getroot();
-Handle open(Handle root, const std::string subpath);
-Handle mkfile(Handle root, const std::string subpath, const char *data);
-Handle mkdir(Handle root, const std::string subpath);
-const char *getcontents(Handle h);
-void putcontents(Handle h, const char *data);
-std::string readdir(Handle h);
-Metadata stat(Handle f);
-Sequencer flock(Handle f, Locktype lt);
-Sequencer funlock(Handle f);
-void remove(Handle f);
+class Handle {
+  public:
+    Handle open(String subpath);
+    Handle mkfile(String subpath, String initialdata);
+    Handle mkdir(String subpath);
+    const String& getcontents();
+    void putcontents(String data);
+    std::vector<String> readdir();
+    const Metadata& stat();
+    const Sequencer& flock(const LockType& type);
+    const Sequencer& funlock();
+    void remove();
+};
+
+class Phat {
+  public:
+    Handle& getRoot();
+
+  private:
+    Handle root_;
+};
+
+}
+
+#endif
