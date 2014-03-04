@@ -1,10 +1,13 @@
 #ifndef PHAT_HH
 #define PHAT_HH
+
+#include "mpfd.hh"
 #include "string.hh"
 #include <vector>
+#include <map>
 
 namespace phat {
-class Phat;
+class Handle;
 
 struct Metadata {
 };
@@ -14,26 +17,37 @@ struct Sequencer {
 
 enum LockType { write = 0, read = 1 };
 
-class Handle {
-  public:
-    Handle open(String subpath);
-    Handle mkfile(String subpath, String initialdata);
-    Handle mkdir(String subpath);
-    const String& getcontents();
-    void putcontents(String data);
-    std::vector<String> readdir();
-    const Metadata& stat();
-    const Sequencer& flock(const LockType& type);
-    const Sequencer& funlock();
-    void remove();
-};
-
 class Phat {
   public:
-    Handle& getRoot();
+    Phat(String host, uint32_t port);
+
+    Handle* getRoot();
+    Handle* open(Handle* handle, String subpath);
+    Handle* mkfile(Handle* handle, String subpath, String initialdata);
+    Handle* mkdir(Handle* handle, String subpath);
+    const String& getcontents(Handle* handle);
+    void putcontents(Handle* handle, String data);
+    std::vector<String> readdir(Handle* handle);
+    const Metadata& stat(Handle* handle);
+    const Sequencer& flock(Handle* handle, const LockType& type);
+    const Sequencer& funlock(Handle* handle);
+    void remove(Handle* handle);
 
   private:
-    Handle root_;
+    msgpack_fd* mpfd_;
+    std::map<String, Handle*> open_;
+};
+
+class Handle {
+  public:
+    Handle(String path);
+
+    const String& path() const;
+
+  private:
+    String path_;
+
+    friend class Phat;
 };
 
 }
