@@ -27,8 +27,10 @@ TAMER = mprpc/tamer/compiler/tamer
 TAMERFLAGS = @TAMERFLAGS@
 LIBTAMER = mprpc/tamer/tamer/.libs/libtamer.a
 
+BINARIES = phat-client phat-server
 
-all: phat
+
+all: $(BINARIES)
 
 %.o: %.c config.h $(DEPSDIR)/stamp
 	$(CXXCOMPILE) $(DEPCFLAGS) -include config.h -c -o $@ $<
@@ -48,7 +50,10 @@ $(TAMEDDIR)/%.hh: %.thh config.h $(DEPSDIR)/stamp $(TAMER)
 %.S: %.o
 	objdump -S $< > $@
 
-phat: phat.o paxos.o $(LIBTAMER)
+phat-server: phat-server.o paxos.o $(LIBTAMER)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+phat-client: phat-client.o paxos.o $(LIBTAMER)
 	$(CXX) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 config.h: stamp-h
@@ -77,11 +82,12 @@ mprpc-update:
 	cd mprpc && $(MAKE)
 
 clean:
-	rm -f phat
+	rm -f $(BINARIES) *.o
 	rm -rf .deps
 
 # tamer dependencies
-phat.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat.cc
+phat-server.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat-server.cc
+phat-client.o: $(TAMEDDIR)/phat.hh $(TAMEDDIR)/phat-client.cc
 paxos.o: $(TAMEDDIR)/paxos.cc
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d)

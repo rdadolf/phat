@@ -7,7 +7,8 @@
 /config.status
 /configure
 /conftest.*
-/phat
+/phat-server
+/phat-client
 /stamp-h
 *~
 *.o
