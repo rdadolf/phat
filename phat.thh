@@ -3,35 +3,41 @@
 
 #include "mpfd.hh"
 #include "string.hh"
+#include <tamer/tamer.hh>
 #include <vector>
 #include <map>
 
 namespace phat {
 class Handle;
 
-struct Metadata {
+class Metadata {
 };
 
-struct Sequencer {
+class Sequencer {
 };
 
 enum LockType { write = 0, read = 1 };
 
 class Phat {
   public:
-    Phat(String host, uint32_t port);
+    Phat();
+    tamed void connect(String host, uint32_t port, tamer::event<> done);
 
-    Handle* getRoot();
-    Handle* open(Handle* handle, String subpath);
-    Handle* mkfile(Handle* handle, String subpath, String initialdata);
-    Handle* mkdir(Handle* handle, String subpath);
-    const String& getcontents(Handle* handle);
-    void putcontents(Handle* handle, String data);
-    std::vector<String> readdir(Handle* handle);
-    const Metadata& stat(Handle* handle);
-    const Sequencer& flock(Handle* handle, const LockType& type);
-    const Sequencer& funlock(Handle* handle);
-    void remove(Handle* handle);
+    tamed void getRoot(tamer::event<Handle*, int32_t> done);
+    tamed void open(Handle* handle, String subpath, 
+                    tamer::event<Handle*, int32_t> done);
+    tamed void mkfile(Handle* handle, String subpath, String initialdata, 
+                      tamer::event<Handle*, int32_t> done);
+    tamed void mkdir(Handle* handle, String subpath, 
+                     tamer::event<Handle*, int32_t> done);
+    tamed void getcontents(Handle* handle, tamer::event<String, int32_t> done);
+    tamed void putcontents(Handle* handle, String data, tamer::event<int32_t> done);
+    tamed void readdir(Handle* handle, tamer::event<std::vector<String>, int32_t> done);
+    tamed void stat(Handle* handle, tamer::event<Metadata*, int32_t> done);
+    tamed void flock(Handle* handle, const LockType& type, 
+                     tamer::event<Sequencer*, int32_t> done);
+    tamed void funlock(Handle* handle, tamer::event<Sequencer*, int32_t> done);
+    tamed void remove(Handle* handle, tamer::event<int32_t> done);
 
   private:
     msgpack_fd* mpfd_;
@@ -40,15 +46,30 @@ class Phat {
 
 class Handle {
   public:
-    Handle(String path);
+    inline Handle(String path);
 
-    const String& path() const;
+    inline const String& path() const;
 
   private:
     String path_;
 
+    // cache
+    String contents_;
+    Metadata* meta_;
+    Sequencer* lock_;
+    std::vector<String> children_;
+
     friend class Phat;
 };
+
+
+inline Handle::Handle(String path) 
+    : path_(path), meta_(nullptr), lock_(nullptr) {
+}
+
+inline const String& Handle::path() const {
+    return path_;
+}
 
 }
 
