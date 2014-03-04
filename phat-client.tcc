@@ -37,8 +37,8 @@ tamed void Phat::connect(String host, uint32_t port, event<> done) {
     // connect
     twait { tamer::tcp_connect(hostip, port, make_event(fd)); }
     if (!fd) {
-        std::cerr << "connect " << (host ? host : "localhost")
-                  << ":" << port << ": " << strerror(-fd.error()) << std::endl;
+        std::cerr << "connect " << host << ":" << port << ": " 
+                  << strerror(-fd.error()) << std::endl;
         return;
     }
 
