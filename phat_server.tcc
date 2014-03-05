@@ -5,12 +5,13 @@
 #include "clp.h"
 
 #include "puppet.hh"
-#include "api.hh"
 
-int chubby_port = 15808;
+int chubby_port = 15810;
+int puppet_port = 15808;
 
 static Clp_Option options[] = {
   { "chubby-port", 'p', 0, Clp_ValInt, 0 },
+  { "puppet-port", 'P', 0, Clp_ValInt, 0 },
 };
 
 int main(int argc, char **argv)
@@ -22,9 +23,14 @@ int main(int argc, char **argv)
     if(Clp_IsLong(clp, "chubby-port")) {
       chubby_port = clp->val.i;
     }
+    else if(Clp_IsLong(clp, "puppet-port")) {
+      puppet_port = clp->val.i;
+    }
   }
 
-  puppet_server();
+  puppet::Puppet_Server puppet_server(puppet_port);
+  //replica_server();
+  //master_server(); // sleeping until consensus says I'm master
 
   tamer::loop();
   tamer::cleanup();

@@ -1,0 +1,28 @@
+tamed void run()
+{
+  tvars {
+    puppet::Puppet A, B, C;
+  }
+  puppet::spawn("client --puppet-port 15808");
+  puppet::spawn("client --puppet-port 15807");
+  puppet::spawn("client --puppet-port 15806");
+  sleep(1);
+  twait {
+    A.connect(make_event(),"localhost",15808);
+    B.connect(make_event(),"localhost",15807);
+    C.connect(make_event(),"localhost",15806);
+  }
+  printf("All puppets up.\n");
+  twait {
+    A.send_sleep(make_event(),1);
+    B.send_sleep(make_event(),1);
+    C.send_sleep(make_event(),1);
+  }
+  printf("Puppets sleeping. Killing them.\n");
+  twait {
+    A.send_die(make_event());
+    B.send_die(make_event());
+    C.send_die(make_event());
+  }
+  printf("Puppets killed.\n");
+}

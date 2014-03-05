@@ -1,33 +1,46 @@
-.PHONY: default server
-.SECONDARY: phat.cc paxos.cc client.cc puppet.cc
+.PHONY: default
 
-default: server client puppet
+CPP_TEMPS= client_driver.cc paxos.cc phat_api.cc phat_api.hh phat_server.cc puppet.cc puppet.hh server_driver.cc
+.SECONDARY:$(CPP_TEMPS)
+
+default: server_driver client_driver puppet
+
+# Test scripts
+simple:
+	make TEST_SCRIPT=test/simple.hh
+die:
+	make TEST_SCRIPT=test/die.hh
+rw:
+	make TEST_SCRIPT=test/rw.hh
+
 
 # All manner of FLAGS
+DEBUG=-g -DDEBUG=1
+
 TAMERC=../mprpc/tamer/compiler/tamer
-TAMERFLAGS=-g
+TAMERFLAGS=
 CXX=g++
-CXXFLAGS=-g -std=gnu++0x -Imprpc -Imprpc/tamer -include config.h
+CXXFLAGS=-Wall $(DEBUG) -std=gnu++11 -Imprpc -Imprpc/tamer -include config.h
 LIBTAMER=../mprpc/tamer/tamer/.libs/libtamer.a
 LIBS=$(LIBTAMER) `$(TAMERC) -l`
 LDFLAGS=-L../mprpc/tamer -lrt -lpthread -lm $(LIBS)
-MPRPC=mprpc
+MPRPC_SRC=mprpc/msgpack.cc mprpc/mpfd.cc mprpc/string.cc mprpc/straccum.cc mprpc/json.cc mprpc/compiler.cc mprpc/clp.c
+MPRPC_OBJ=mprpc/msgpack.o mprpc/mpfd.o mprpc/string.o mprpc/straccum.o mprpc/json.o mprpc/compiler.o mprpc/clp.c
+MPRPC_HDR=mprpc/msgpack.hh mprpc/mpfd.hh mprpc/string.hh mprpc/straccum.hh mprpc/json.hh mprpc/compiler.hh mprpc/clp.h
 
 # Build rules
-server: phat
+client_driver.o: client_driver.cc phat_api.hh puppet.hh 
+phat_api.o: phat_api.hh
+client_driver: client_driver.o phat_api.o $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+	$(CXX) client_driver.o phat_api.o $(MPRPC_OBJ) -o client_driver $(LDFLAGS)
 
-phat: phat.cc puppet.hh paxos.cc $(MPRPC)
-	$(CXX) $(CXXFLAGS) phat.cc paxos.cc mprpc/clp.c -o phat $(LDFLAGS)
+server_driver.o: server_driver.cc puppet.hh
+server_driver: server_driver.o $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+	$(CXX) server_driver.o $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
 
-client: client.cc puppet.hh api.hh $(MPRPC)
-	$(CXX) $(CXXFLAGS) client.cc mprpc/clp.c -o client $(LDFLAGS)
-
-puppet: puppet.cc puppet.hh $(MPRPC)
-	$(CXX) $(CXXFLAGS) puppet.cc mprpc/clp.c -o puppet $(LDFLAGS)
-
-# Library dependencies
-mprpc:
-	make -C mprpc
+TEST_SCRIPT ?= test/simple.hh
+puppet: puppet.o puppet.hh $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
+	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(MPRPC_SRC) -o puppet $(LDFLAGS)
 
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
@@ -37,4 +50,5 @@ mprpc:
 
 # Cleanup
 clean:
-	rm -f phat phat.cc paxos.cc client client.cc api.hh puppet puppet.cc puppet.hh
+	rm -f client_driver server_driver puppet
+	rm -f $(CPP_TEMPS)

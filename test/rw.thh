@@ -1,0 +1,40 @@
+tamed void run()
+{
+  tvars {
+    puppet::Puppet A, B, C, D, S0, S1, S2, S3, S4;
+  }
+  puppet::spawn("client -p 15810");
+  puppet::spawn("client -p 15811");
+  puppet::spawn("client -p 15812");
+  puppet::spawn("client -p 15813");
+  puppet::spawn("phat -p 15814");
+  puppet::spawn("phat -p 15815");
+  puppet::spawn("phat -p 15816");
+  puppet::spawn("phat -p 15817");
+  puppet::spawn("phat -p 15818");
+  twait {
+    A.connect(make_event(),"localhost",15810);
+    B.connect(make_event(),"localhost",15810);
+    C.connect(make_event(),"localhost",15810);
+    D.connect(make_event(),"localhost",15810);
+    S0.connect(make_event(),"localhost",15810);
+    S1.connect(make_event(),"localhost",15810);
+    S2.connect(make_event(),"localhost",15810);
+    S3.connect(make_event(),"localhost",15810);
+    S4.connect(make_event(),"localhost",15810);
+  }
+  printf("All puppets up.");
+  twait {
+    A.send_getroot(make_event(),"root");
+    B.send_getroot(make_event(),"root");
+  }
+  twait {
+    A.send_mkfile("","root","/test","testdata");
+  }
+  twait {
+    B.send_open("","root","/test");
+  }
+  twait {
+    B.send_getcontents("data","fb");
+  }
+}

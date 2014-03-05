@@ -1,0 +1,53 @@
+#include <string>
+#include <stdint.h>
+
+namespace phat {
+
+// Handle type
+class Handle
+{
+  // FIXME
+};
+
+// Metadata type
+class Metadata
+{
+  // FIXME
+};
+
+// Sequencer type
+class Sequencer
+{
+private:
+  uint64_t v;
+  // FIXME
+};
+
+// Locktype?
+class Locktype
+{
+private:
+  // FIXME
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Phat_API
+{
+public:
+  Phat_API();
+
+  Handle getroot();
+  Handle open(Handle root, const std::string subpath);
+  Handle mkfile(Handle root, const std::string subpath, const char *data);
+  Handle mkdir(Handle root, const std::string subpath);
+  const char *getcontents(Handle h);
+  void putcontents(Handle h, const char *data);
+  std::string readdir(Handle h);
+  Metadata stat(Handle f);
+  Sequencer flock(Handle f, Locktype lt);
+  Sequencer funlock(Handle f);
+  void remove(Handle f);
+};
+
+} // namespace phat

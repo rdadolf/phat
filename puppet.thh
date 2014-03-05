@@ -1,11 +1,344 @@
+#include <string>
+#include <stdlib.h>
+#include <assert.h>
+#include <map>
+#include <unistd.h>
 #include "mpfd.hh"
 #include "json.hh"
 #include <netdb.h>
+#include <errno.h>
 
-tamed void puppet_server()
+namespace puppet {
+
+void spawn(String command)
 {
-  twait {
-    tamer::at_asap(make_event());
-  }
-  printf("puppet\n");
+  pid_t me;
+  printf("Spawning '%s'\n", command.c_str());
+  if( (me=fork())==0 ) { // child
+    system(command.c_str());
+    exit(0);
+  } // else parent
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+class Puppet
+{
+private:
+  tamer::fd conn_;
+public:
+  Puppet();
+
+  // Setup operations
+  tamed void connect(String hostname, int port, tamer::event<> ev);
+  void disconnect();
+
+  // Basic operations
+  tamed void send_print(String name, tamer::event<> ev);
+  tamed void send_die(tamer::event<> ev);
+  tamed void send_sleep(int seconds, tamer::event<> ev);
+
+  // Client operations
+  tamed void send_getroot(String lhs, tamer::event<> ev);
+  tamed void send_open(String lhs, String root, String subpath, tamer::event<> ev);
+  // FIXME: the rest...
+};
+
+
+// Setup Operations 
+
+Puppet::Puppet()
+{
+  #ifdef DEBUG
+  printf("Puppet created.\n");
+  #endif
+}
+
+tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
+{
+  tvars {
+    struct in_addr hostip;
+    tamer::fd local_conn;
+    msgpack_fd mpfd;
+    Json msg = Json::array(String("die"));
+  }
+  #ifdef DEBUG
+  printf("Looking up %s:%d\n", hostname.c_str(), port);
+  #endif
+
+/*
+  in_addr_t a = inet_addr(hostname.c_str());
+  if ( a != INADDR_NONE ) {
+    hostip.s_addr = a;
+  } else {
+    struct hostent* hp = gethostbyname(hostname.c_str());
+    if( hp==NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET ) {
+      fprintf(stderr,"Can't find %s: '%s'\n", hostname.c_str(), strerror(errno));
+      exit(-1);
+    }
+    hostip = *((struct in_addr*) hp->h_addr);
+  }
+*/
+  hostip.s_addr = htonl(INADDR_LOOPBACK);
+  
+  #ifdef DEBUG
+  printf("Connecting to %d:%d\n", hostip.s_addr, port);
+  #endif
+
+  twait { tamer::tcp_connect(hostip, port, make_event(local_conn)); }
+  if( !local_conn ) {
+    fprintf(stderr,"Couldn't connect to %s: '%s'\n", hostname.c_str(), strerror(-local_conn.error()));
+    exit(-1);
+  }
+
+  mpfd.initialize(local_conn);
+  mpfd.write(msg);
+
+  ev();
+}
+
+void Puppet::disconnect()
+{
+  #ifdef DEBUG
+  printf("Disconnecting\n");
+  #endif
+}
+
+// Basic operations
+
+tamed void Puppet::send_print(String name, tamer::event<> ev)
+{
+  #if DEBUG
+  printf("Sending print\n");
+  #endif
+  ev();
+}
+
+tamed void Puppet::send_die(tamer::event<> ev){
+  tvars {
+    Json msg = Json::array(String("die"));
+    msgpack_fd mpfd;
+  }
+  #if DEBUG
+  printf("Sending die\n");
+  #endif
+
+  printf("conn_:%d\n",conn_.valid());
+  mpfd.initialize(conn_);
+  //msg = Json::array(String("die"));
+  std::cout << "request: " << msg << std::endl;
+  mpfd.write(msg);
+  std::cout << "request: " << msg << std::endl;
+  ev();
+}
+
+tamed void Puppet::send_sleep(int seconds, tamer::event<> ev)
+{
+  #if DEBUG
+  printf("Sending sleep\n");
+  #endif
+  ev();
+}
+
+// Client Operations
+
+tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
+{
+  #if DEBUG
+  printf("Sending getroot\n");
+  #endif
+
+  ev();
+}
+
+tamed void Puppet::send_open(String lhs, String root, String subpath, tamer::event<> ev)
+{
+  #if DEBUG
+  printf("Sending open\n");
+  #endif
+}
+
+#if 0
+int Puppet::send_mkfile(String lhs, String root, String subpath, String data)
+{
+  #if DEBUG
+  printf("Sending mkfile\n");
+  #endif
+  return 0;
+}
+
+int Puppet::send_mkdir(String lhs, String root, String subpath)
+{
+  #if DEBUG
+  printf("Sending mkdir\n");
+  #endif
+  return 0;
+}
+
+int Puppet::send_getcontents(String lhs, String handle)
+{
+  #if DEBUG
+  printf("Sending getcontents\n");
+  #endif
+  return 0;
+}
+
+int Puppet::send_putcontents(String lhs, String handle, String data)
+{
+  #if DEBUG
+  printf("Sending putcontents\n");
+  #endif
+  return 0;
+}
+
+int Puppet::send_readdir(String lhs, String handle)
+{
+  #if DEBUG
+  printf("Sending readdir\n");
+  #endif
+  return 0;
+}
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Puppet Server
+
+#define WATCHDOG_TIMER 1
+
+class Puppet_Server
+{
+private:
+  tamer::fd listen_fd;
+  tamer::fd puppeteer_fd;
+  String s;
+public:
+  Puppet_Server(int port);
+
+  // Basic operations
+  tamed void run_puppet_server(int port);
+  tamed void read_and_dispatch();
+  void dispatch(String tag, Json args); // called from above, but extensible.
+
+  // Remote operations
+  tamed void service_print(Json args);
+  tamed void service_die(Json args);
+  tamed void service_sleep(Json args);
+  //int service_print(String name);
+  //int service_die();
+  //int service_sleep(int seconds);
+
+  // Phat Client operations
+  //int service_getroot(String lhs);
+  //int service_open(String lhs, String root, String subpath);
+  //int service_mkfile(String lhs, String root, String subpath, String data);
+  //int service_mkdir(String lhs, String root, String subpath);
+  //int service_getcontents(String lhs, String handle);
+  //int service_putcontents(String lhs, String handle, String data);
+  //int service_readdir(String lhs, String handle);
+
+};
+
+Puppet_Server::Puppet_Server(int port=15808)
+{
+  printf("Asked for %d\n", port);
+  run_puppet_server(port);
+}
+
+tamed void Puppet_Server::run_puppet_server(int port)
+{
+  #ifdef DEBUG
+  printf("Puppet alive, trying port %d.\n",port);
+  #endif
+  listen_fd = tamer::tcp_listen(port);
+  if( !listen_fd ) {
+    fprintf(stderr,"Puppet failed to listen: %s.\n",strerror(-listen_fd.error()));
+    exit(-1);
+  }
+  #ifdef DEBUG
+  printf("Puppet listening.\n");
+  #endif
+  while(listen_fd) {
+    twait {
+      listen_fd.accept(make_event(puppeteer_fd));
+    }
+    read_and_dispatch();
+  }
+}
+
+tamed void Puppet_Server::read_and_dispatch()
+{
+  tvars {
+    msgpack_fd mpfd;
+    Json in_msg, out_msg;
+    String tag;
+  }
+
+  mpfd.initialize(puppeteer_fd);
+  #ifdef DEBUG
+  printf("Puppet received connection\n");
+  #endif
+
+  while(puppeteer_fd) {
+    twait{ mpfd.read_request(tamer::make_event(in_msg)); }
+    std::cout << "request: " << in_msg << std::endl;
+    // Validate (valid, array, len>1, tag first)
+    if( !in_msg || !in_msg.is_a() || !in_msg.size()>0 || !in_msg[0].is_s() ) {
+      fprintf(stderr,"is_null %d\n", in_msg.is_null());
+      fprintf(stderr,"!in_msg=%d\n", !in_msg);
+      fprintf(stderr,"!in_msg.is_a()=%d\n", !in_msg.is_a());
+      fprintf(stderr,"!in_msg.size()>0=%d\n", !in_msg.size()>0);
+      fprintf(stderr,"!in_msg[0].is_s()=%d\n", !in_msg[0].is_s());
+      fprintf(stderr,"Malformed puppet message received.\n");
+      continue; // Doesn't look like a puppet message, toss it.
+    }
+    tag = in_msg[0].as_s();
+    dispatch(tag,in_msg);
+  }
+  puppeteer_fd.close();
+}
+
+void Puppet_Server::dispatch(String tag, Json args)
+{
+  if(tag=="print")
+      service_print(args);
+  else if(tag=="sleep")
+      service_sleep(args);
+  else if(tag=="die")
+      service_die(args);
+  // No warning about unknown messages, to allow extensibility via inheritance
+}
+
+void Puppet_Server::service_print(Json args)
+{
+  #ifdef DEBUG
+  printf("Puppet printing.\n");
+  #endif
+}
+
+void Puppet_Server::service_die(Json args)
+{
+  #ifdef DEBUG
+  printf("Puppet dying.\n");
+  #endif
+  exit(0);
+}
+
+tamed void Puppet_Server::service_sleep(Json args)
+{
+  tvars {
+    int i;
+  }
+  if( !args[1].is_i() ) {
+    return;
+  }
+  i = args[1].as_i();
+  assert((i>0) && (i<1000) && "Ridiculous sleep time requested. Corruption?\n");
+  #ifdef DEBUG
+  printf("Puppet sleeping.\n");
+  #endif
+  twait { tamer::at_delay(i,make_event()); }
+}
+
+} // namespace puppet
