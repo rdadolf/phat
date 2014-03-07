@@ -1,0 +1,86 @@
+// -*- mode: c++ -*-
+#ifndef _PAXOS_THH
+#define _PAXOS_THH
+
+#include "mpfd.hh"
+#include <netdb.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define WAIT            0   // waiting to start
+#define PREPARE         1   // prepare message
+#define ACCEPT          2   // accept message
+#define DECIDED         3   // decided message
+#define PREPARED        4   // prepared message
+#define ACCEPTED        5   // accepted message
+
+class Paxos_Proposer{
+public:
+    typedef Paxos_Proposer ppropose_type;
+
+    String hostname;
+    std::vector<int> ports;
+    std::vector<tamer::fd> cfd;
+    std::vector<msgpack_fd> mpfd;
+    std::vector<Json> res;
+    int f;
+    int n_p,n_o,a;
+    Json v_o,v_c; // v_c is the value to choose
+
+    Paxos_Proposer() {};
+    Paxos_Proposer(const char* host,std::vector<int> ps,int f_i) :
+        hostname(host), ports(ps),
+        cfd(ps.size()),
+        mpfd(ps.size()),
+        res(ps.size()),
+        f(f_i), n_p(0), v_o(), v_c() {
+    }
+    ~Paxos_Proposer() {
+        for (std::vector<int>::size_type i = 0; i < ports.size() ; ++i)
+            cfd[i].close();
+        ports.clear();
+        cfd.clear();
+        mpfd.clear();
+        res.clear();
+    }
+    void set_vc(Json v) {
+        v_c = v;
+    }
+
+    tamed void proposer_init(tamer::event<> done);
+    tamed void client_init(const char* hostname, int port, tamer::fd& cfd, 
+                            msgpack_fd& mpfd, struct in_addr& hostip,tamer::event<> done);
+    tamed void send_to_all(Json& req,tamer::event<> done);
+    tamed void run_instance(Json v,tamer::event<Json> done);
+    tamed void propose(int n, Json v,tamer::event<> done);
+    tamed void accept(int n , tamer::event<> done);
+    
+};
+
+class Paxos_Acceptor{
+public:
+    typedef Paxos_Acceptor paccept_type;
+
+    int port;
+    Json v_a;
+    int n_l, n_a;
+
+    Paxos_Acceptor() : port(18029),v_a (Json::make_array()), n_l(0),n_a(0) {
+    }
+    Paxos_Acceptor(int p) : port(p),v_a (Json::make_array()), n_l(0),n_a(0){
+    }
+
+    void prepare_message(Json& req, Json& res, int type) {
+        res[0] = -req[0].as_i();
+        res[1] = req[1];
+        res[2] = type;
+    }
+
+    tamed void acceptor_init(tamer::event<> done);
+    tamed void handle_request(tamer::fd cfd);
+    tamed void prepare(msgpack_fd& mpfd, Json& req,int n);
+    tamed void accept(msgpack_fd& mpfd, Json& req, int n, Json v);
+    tamed void decided(msgpack_fd& mpfd, Json& req,Json v);
+};
+
+#endif
