@@ -2,14 +2,20 @@
 #include <iostream>
 #include "mpfd.hh"
 
+#include "rpc_msg.hh"
+
 #define PORTNUM 15808
+
+// FIXME Enable buggy behavior.
+#define RPC_MSG_ISSUE true
 
 tamed void client()
 {
   tvars {
     tamer::fd server_fd;
     msgpack_fd mpfd;
-    Json msg = Json::array(String("getroot"));
+    RPC_Msg request = RPC_Msg(Json::array(String("getroot")));
+    Json reply;
     struct in_addr ip;
   }
 
@@ -23,23 +29,35 @@ tamed void client()
   }
   mpfd.initialize(server_fd);
   while(1) {
+    std::cout << "sending: " << request.content() << "\n";
     twait {
       at_delay(1, make_event());
-      mpfd.write(msg);
+      mpfd.call(request,make_event(reply));
     }
-    std::cout << "request: " << msg << "\n";
+    std::cout << "received: " << reply << "\n";
   }
 }
 
-tamed void process(tamer::fd client_fd)
+tamed void process(msgpack_fd &mpfd)
 {
   tvars {
-    msgpack_fd mpfd(client_fd);
-    Json content;
+    Json request, reply;
+    RPC_Msg rpc_request, rpc_reply;
   }
-  while(client_fd) {
-    twait { mpfd.read_request(make_event(content)); }
-    std::cout << "process: " << content << "\n";
+  while(mpfd) {
+    #ifdef RPC_MSG_ISSUE
+    twait { mpfd.read_request(tamer::make_event(rpc_request)); }
+    std::cout << "received: " << rpc_request.content() << "\n";
+    rpc_reply = RPC_Msg(Json::array("ACK"),request);
+    std::cout << "replying: " << rpc_reply.content() << "\n";
+    mpfd.write(rpc_reply);
+    #else
+    twait { mpfd.read_request(tamer::make_event(request)); }
+    std::cout << "received: " << request << "\n";
+    reply = Json::array(-1,request[1].as_i(),Json::array("ACK"));
+    std::cout << "replying: " << reply << "\n";
+    mpfd.write(reply);
+    #endif
     //printf("%s\n", content[0].as_s().c_str());
   }
 }
@@ -49,6 +67,7 @@ tamed void server()
   tvars {
     tamer::fd listen_fd = tamer::tcp_listen(PORTNUM);
     tamer::fd client_fd;
+    msgpack_fd mpfd;
   }
   if (!listen_fd) {
     fprintf(stderr,"Error from tamer::tcp_listen: %s\n", strerror(-listen_fd.error()));
@@ -56,7 +75,8 @@ tamed void server()
   }
   while(listen_fd) {
     twait { listen_fd.accept(make_event(client_fd)); }
-    process(client_fd); // One client at a time.
+    mpfd.initialize(client_fd);
+    process(mpfd); // One client at a time.
   }
 }
 
