@@ -17,11 +17,11 @@ rw:
 # All manner of FLAGS
 DEBUG=-g -DDEBUG=1
 
-TAMERC=../mprpc/tamer/compiler/tamer
-TAMERFLAGS=-n -L
+TAMERC=mprpc/tamer/compiler/tamer
+TAMERFLAGS=-n
 CXX=g++
 CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
-LIBTAMER=../mprpc/tamer/tamer/.libs/libtamer.a
+LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
 LIBS=$(LIBTAMER) `$(TAMERC) -l`
 LDFLAGS=-L../mprpc/tamer -lrt -lpthread -lm $(LIBS)
 MPRPC_SRC=mprpc/msgpack.cc mprpc/.deps/mpfd.cc mprpc/string.cc mprpc/straccum.cc mprpc/json.cc mprpc/compiler.cc mprpc/clp.c

@@ -90,7 +90,7 @@ tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
     exit(-1);
   }
 
-  mpfd_.initialize(cdf);
+  mpfd_.initialize(cfd);
 
   ev();
 }
@@ -115,7 +115,7 @@ tamed void Puppet::send_print(String name, tamer::event<> ev)
   #endif
 
   request = Json::array(1, Json::null, Json::array(String("open")));
-  twait { mpfd_.call(out_msg,make_event(reply)); }
+  twait { mpfd_.call(request,make_event(reply)); }
   // FIXME: validate
   // FIXME: assert not NACK
   ev();
@@ -124,18 +124,15 @@ tamed void Puppet::send_print(String name, tamer::event<> ev)
 tamed void Puppet::send_die(tamer::event<> ev){
   tvars {
     Json msg;
-    msgpack_fd mpfd;
   }
   #if DEBUG
   printf("Sending die\n");
   #endif
 
   msg = Json::array(String("die"));
-  printf("conn_:%d\n",conn_.valid());
-  mpfd.initialize(conn_);
   //msg = Json::array(String("die"));
   std::cout << "request: " << msg << std::endl;
-  mpfd.write(msg);
+  mpfd_.write(msg);
   std::cout << "request: " << msg << std::endl;
   ev();
 }
