@@ -18,7 +18,7 @@ rw:
 DEBUG=-g -DDEBUG=1
 
 TAMERC=../mprpc/tamer/compiler/tamer
-TAMERFLAGS=
+TAMERFLAGS=-n -L
 CXX=g++
 CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=../mprpc/tamer/tamer/.libs/libtamer.a
