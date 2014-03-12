@@ -20,7 +20,7 @@ DEBUG=-g -DDEBUG=1
 TAMERC=mprpc/tamer/compiler/tamer
 TAMERFLAGS=-n
 CXX=g++
-CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
+CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
 LIBS=$(LIBTAMER) `$(TAMERC) -l`
 LDFLAGS=-L../mprpc/tamer -lrt -lpthread -lm $(LIBS)
@@ -44,7 +44,7 @@ puppet: puppet.o puppet.hh $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
 
 paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
-
+	
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
 	$(TAMERC) $(TAMERFLAGS) $< -o $@
@@ -55,7 +55,7 @@ paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
 
 paxos.o: $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC) paxos.hh paxos.cc
 paxos_test.o: paxos_test.cc paxos.hh mprpc/.deps/mpfd.hh
-log_test.o: log_test.cc
+ex/log_test.o: ex/log_test.cc
 
 # Cleanup
 clean:

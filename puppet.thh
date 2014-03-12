@@ -7,6 +7,7 @@
 #include "json.hh"
 #include <netdb.h>
 #include <errno.h>
+#include "rpc_msg.hh"
 
 namespace puppet {
 
@@ -107,15 +108,15 @@ void Puppet::disconnect()
 tamed void Puppet::send_print(String name, tamer::event<> ev)
 {
   tvars {
-    Json request, reply;
+    RPC_Msg request = RPC_Msg(Json::array(String("print"),name));
+    RPC_Msg reply;
   }
 
   #if DEBUG
   printf("Sending print\n");
   #endif
 
-  request = Json::array(1, Json::null, Json::array(String("open")));
-  twait { mpfd_.call(request,make_event(reply)); }
+  twait { mpfd_.call(request,make_event(reply.json())); }
   // FIXME: validate
   // FIXME: assert not NACK
   ev();
@@ -277,7 +278,7 @@ tamed void Puppet_Server::read_and_dispatch()
 {
   tvars {
     msgpack_fd mpfd;
-    Json in_msg, out_msg;
+    RPC_Msg request, reply;
     String tag;
   }
 
@@ -287,10 +288,13 @@ tamed void Puppet_Server::read_and_dispatch()
   #endif
 
   while(puppeteer_fd) {
-    twait{ mpfd.read_request(tamer::make_event(in_msg)); }
-    std::cout << "request: " << in_msg << std::endl;
+    twait{ mpfd.read_request(tamer::make_event(request.json())); }
+    reply = RPC_Msg(Json::array(String("ACK")),request);
+    mpfd.write(reply);
+    std::cout << "request: " << request.json() << std::endl;
     // Validate (valid, array, len>1, tag first)
-    if( !in_msg || !in_msg.is_a() || !in_msg.size()>0 || !in_msg[0].is_s() ) {
+#if 0
+    /if( !in_msg || !in_msg.is_a() || !in_msg.size()>0 || !in_msg[0].is_s() ) {
       fprintf(stderr,"is_null %d\n", in_msg.is_null());
       fprintf(stderr,"!in_msg=%d\n", !in_msg);
       fprintf(stderr,"!in_msg.is_a()=%d\n", !in_msg.is_a());
@@ -299,8 +303,9 @@ tamed void Puppet_Server::read_and_dispatch()
       fprintf(stderr,"Malformed puppet message received.\n");
       continue; // Doesn't look like a puppet message, toss it.
     }
-    tag = in_msg[0].as_s();
-    dispatch(tag,in_msg);
+#endif
+    tag = request.content()[0].as_s();
+    dispatch(tag,request.content());
   }
   puppeteer_fd.close();
 }
@@ -321,6 +326,7 @@ void Puppet_Server::service_print(Json args)
   #ifdef DEBUG
   printf("Puppet printing.\n");
   #endif
+  std::cout << args[1] << "\n";
 }
 
 void Puppet_Server::service_die(Json args)

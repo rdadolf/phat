@@ -8,4 +8,7 @@ tamed void run()
   twait {
     A.connect("localhost",15808,make_event());
   }
+  twait {
+    A.send_print("hello world",make_event());
+  }
 }
