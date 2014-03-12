@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 #include <sys/time.h>
 #include "json.hh"
 
@@ -72,7 +73,10 @@ class NameID_Log {
     Logger* log;
 public:
     NameID_Log(const char* name,int id){
-        _fp.open("log.txt",std::ofstream::out | std::ofstream::app);
+        String fn = "log_";
+        fn.append(std::to_string(getpid()));
+        fn.append(".txt");
+        _fp.open(fn.c_str(),std::ofstream::out | std::ofstream::app);
         log = new Logger(_fp,name,id);
     }
     ~NameID_Log(){
