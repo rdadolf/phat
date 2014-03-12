@@ -26,7 +26,7 @@ void spawn(String command)
 class Puppet
 {
 private:
-  tamer::fd conn_;
+  msgpack_fd mpfd_;
 public:
   Puppet();
 
@@ -59,41 +59,38 @@ tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
 {
   tvars {
     struct in_addr hostip;
-    tamer::fd local_conn;
+    tamer::fd cfd;
     msgpack_fd mpfd;
-    Json msg = Json::array(String("die"));
   }
   #ifdef DEBUG
   printf("Looking up %s:%d\n", hostname.c_str(), port);
   #endif
 
-/*
-  in_addr_t a = inet_addr(hostname.c_str());
-  if ( a != INADDR_NONE ) {
-    hostip.s_addr = a;
-  } else {
-    struct hostent* hp = gethostbyname(hostname.c_str());
-    if( hp==NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET ) {
-      fprintf(stderr,"Can't find %s: '%s'\n", hostname.c_str(), strerror(errno));
-      exit(-1);
+  { // Required for local variable declaration (in_addr_t a).
+    in_addr_t a = inet_addr(hostname.c_str());
+    if ( a != INADDR_NONE ) {
+      hostip.s_addr = a;
+    } else {
+      struct hostent* hp = gethostbyname(hostname.c_str());
+      if( hp==NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET ) {
+        fprintf(stderr,"Can't find %s: '%s'\n", hostname.c_str(), strerror(errno));
+        exit(-1);
+      }
+      hostip = *((struct in_addr*) hp->h_addr);
     }
-    hostip = *((struct in_addr*) hp->h_addr);
   }
-*/
-  hostip.s_addr = htonl(INADDR_LOOPBACK);
   
   #ifdef DEBUG
   printf("Connecting to %d:%d\n", hostip.s_addr, port);
   #endif
 
-  twait { tamer::tcp_connect(hostip, port, make_event(local_conn)); }
-  if( !local_conn ) {
-    fprintf(stderr,"Couldn't connect to %s: '%s'\n", hostname.c_str(), strerror(-local_conn.error()));
+  twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
+  if( !cfd ) {
+    fprintf(stderr,"Couldn't connect to %s: '%s'\n", hostname.c_str(), strerror(-cfd.error()));
     exit(-1);
   }
 
-  mpfd.initialize(local_conn);
-  mpfd.write(msg);
+  mpfd_.initialize(cfd);
 
   ev();
 }
@@ -109,26 +106,33 @@ void Puppet::disconnect()
 
 tamed void Puppet::send_print(String name, tamer::event<> ev)
 {
+  tvars {
+    Json request, reply;
+  }
+
   #if DEBUG
   printf("Sending print\n");
   #endif
+
+  request = Json::array(1, Json::null, Json::array(String("open")));
+  twait { mpfd_.call(request,make_event(reply)); }
+  // FIXME: validate
+  // FIXME: assert not NACK
   ev();
 }
 
 tamed void Puppet::send_die(tamer::event<> ev){
   tvars {
-    Json msg = Json::array(String("die"));
-    msgpack_fd mpfd;
+    Json msg;
   }
   #if DEBUG
   printf("Sending die\n");
   #endif
 
-  printf("conn_:%d\n",conn_.valid());
-  mpfd.initialize(conn_);
+  msg = Json::array(String("die"));
   //msg = Json::array(String("die"));
   std::cout << "request: " << msg << std::endl;
-  mpfd.write(msg);
+  mpfd_.write(msg);
   std::cout << "request: " << msg << std::endl;
   ev();
 }
@@ -157,6 +161,8 @@ tamed void Puppet::send_open(String lhs, String root, String subpath, tamer::eve
   #if DEBUG
   printf("Sending open\n");
   #endif
+
+  ev();
 }
 
 #if 0

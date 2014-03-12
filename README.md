@@ -10,7 +10,7 @@ An implementation of the Chubby lock service protocol in MPRPC.
     git submodule update
     cd mprpc
     ./bootstrap
-    ./configure
+    ./configure CXX='g++ -std=gnu++0x'
     make
     cd ..
     make
