@@ -3,6 +3,7 @@
 #define _PAXOS_THH
 
 #include "mpfd.hh"
+#include "log.hh"
 #include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -26,14 +27,17 @@ public:
     int f;
     int n_p,n_o,a;
     Json v_o,v_c; // v_c is the value to choose
+    NameID_Log log;
 
-    Paxos_Proposer() {};
+
+    // Paxos_Proposer() {};
     Paxos_Proposer(const char* host,std::vector<int> ps,int f_i) :
         hostname(host), ports(ps),
         cfd(ps.size()),
         mpfd(ps.size()),
         res(ps.size()),
-        f(f_i), n_p(0), v_o(), v_c() {
+        f(f_i), n_p(0), v_o(), v_c(),
+        log("Proposer",18029) {
     }
     ~Paxos_Proposer() {
         for (std::vector<int>::size_type i = 0; i < ports.size() ; ++i)
@@ -64,10 +68,19 @@ public:
     int port;
     Json v_a;
     int n_l, n_a;
+    NameID_Log log;
 
-    Paxos_Acceptor() : port(18029),v_a (Json::make_array()), n_l(0),n_a(0) {
+    Paxos_Acceptor() : 
+        port(18029),
+        v_a (Json::make_array()), 
+        n_l(0),n_a(0),
+        log("Acceptor",18029) {
     }
-    Paxos_Acceptor(int p) : port(p),v_a (Json::make_array()), n_l(0),n_a(0){
+    Paxos_Acceptor(int p) : 
+        port(p),
+        v_a (Json::make_array()), 
+        n_l(0),n_a(0),
+        log("Acceptor",p) {
     }
 
     void prepare_message(Json& req, Json& res, int type) {

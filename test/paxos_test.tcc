@@ -8,15 +8,16 @@
 
 tamed void run_acceptor_test(int port) {
     tvars {
-        Paxos_Acceptor::paccept_type pa;
+        Paxos_Acceptor::paccept_type* pa;
     }
-    pa = Paxos_Acceptor(port);
-    twait { pa.acceptor_init(make_event()); }
+    pa = new Paxos_Acceptor(port);
+    twait { pa->acceptor_init(make_event()); }
+    delete pa;
 }
 
 tamed void run_proposer_test(int port, int f) {
     tvars {
-        Paxos_Proposer::ppropose_type pp;
+        Paxos_Proposer::ppropose_type* pp;
         std::vector<int> ports;
         std::vector<int>::size_type i;
         std::vector<int>::size_type n;
@@ -26,17 +27,18 @@ tamed void run_proposer_test(int port, int f) {
     for (i = 0 ; i < n ; ++i)
         ports.push_back(port + i);
 
-    pp = Paxos_Proposer("localhost",ports,f);
+    pp = new Paxos_Proposer("localhost",ports,f);
     req = Json::array("abs");
-    twait { pp.proposer_init(make_event()); }
-    twait { pp.run_instance(req,make_event(ret)); }
+    twait { pp->proposer_init(make_event()); }
+    twait { pp->run_instance(req,make_event(ret)); }
     std::cout << "Chose: " << ret << std::endl;
+    delete pp;
 }
 
 tamed void run_both_test(int port, int f) {
     tvars {
-        Paxos_Acceptor::paccept_type pa;
-        Paxos_Proposer::ppropose_type pp;
+        Paxos_Acceptor::paccept_type* pa;
+        Paxos_Proposer::ppropose_type* pp;
         std::vector<int> ports;
         std::vector<int>::size_type i;
         std::vector<int>::size_type n;
@@ -51,24 +53,27 @@ tamed void run_both_test(int port, int f) {
             perror("fork");
             exit(1);
         } else if (pid == 0) {
-            pa = Paxos_Acceptor(port + i);
-            twait { pa.acceptor_init(make_event()); }
+            pa = new Paxos_Acceptor(port + i);
+            twait { pa->acceptor_init(make_event()); }
+            delete pa;
             exit(0);
         }
         children.push_back(pid);
     }
 
     usleep(1000000); // introduce delay to make sure we have the acceptors and running
-    pp = Paxos_Proposer("localhost",ports,f);
+    pp = new Paxos_Proposer("localhost",ports,f);
     req = Json::array("abs");
-    twait { pp.proposer_init(make_event()); }
-    twait { pp.run_instance(req,make_event(ret)); }
+    twait { pp->proposer_init(make_event()); }
+    twait { pp->run_instance(req,make_event(ret)); }
 
     std::cout << "Chose " << ret << std::endl;
 
     for (i = 0; i < children.size(); ++i)
         kill(children[i],SIGTERM);
     children.clear();
+
+    delete pp;
 }
 
 static Clp_Option options[] = {

@@ -27,7 +27,7 @@ tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd
         else {
             struct hostent* hp = gethostbyname(hostname);
             if (hp == NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET) {
-                std::cerr << "lookup " << hostname << ": " << hstrerror(h_errno) << std::endl;
+                std::cout << "lookup " << hostname << ": " << hstrerror(h_errno) << std::endl;
                 return;
             }
             hostip = *((struct in_addr*) hp->h_addr);
@@ -36,8 +36,8 @@ tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd
 
     twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
     if (!cfd) {
-        std::cerr << "connect " << (hostname ? hostname : "localhost")
-                  << ":" << port << ": " << strerror(-cfd.error()) << std::endl;
+        std::cout << "connect " << (hostname ? hostname : "localhost")
+                  << ":" << port << ": " << strerror(-cfd.error());
         return;
     }
     mpfd.initialize(cfd);
@@ -53,7 +53,7 @@ tamed void Paxos_Proposer::send_to_all(Json& req,tamer::event<> done){
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
 
-    for (i = 0; i < f + 1; ++i)
+    for (i = 0; i < (unsigned)(f + 1); ++i)
         twait(r,ret);
     
     done();
@@ -70,13 +70,14 @@ tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
         bool to;
     }
     set_vc(_v);
+    log << "starting instance";
 start:
     
     propose(n,v,r1.make_event(false));
     tamer::at_delay_sec(4,r1.make_event(true));
     twait(r1,to);
     if (to) { // timeout happened
-        std::cout << "restart1" << std::endl;
+        log << "restarting after propose";
         goto start;
     }
 
@@ -89,13 +90,13 @@ start:
     tamer::at_delay_sec(4,r2.make_event(true));
     twait(r2,to);
     if (to) {
-        std::cout << "restart2" << std::endl;
+        log << "restarting after accept";
         goto start;
     }
     
     req = Json::array(1,NULL,DECIDED,n_p,v_o);
     twait { send_to_all(req,make_event()); }
-    std::cout << "decided" << std::endl;
+    log << "decided";
 
     *done.result_pointer() = v_o;
     done.unblock();
@@ -112,7 +113,7 @@ tamed void Paxos_Proposer::propose(int n, Json v, tamer::event<> done) {
     n_p++;
     n_o = a = 0;
     req = Json::array(1,NULL,PREPARE,n_p);
-    std::cout << "propose: " << req << std::endl;
+    log << "propose: " << req;
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
@@ -143,14 +144,14 @@ tamed void Paxos_Proposer::accept(int n, tamer::event<> done) {
         Json req;
         std::vector<int>::size_type i;
     }
-    std::cout << "accept" << std::endl;
+    log << "accept";
     n_p = std::max(n_o,n_p);
     req = Json::array(1,NULL,ACCEPT,n_p,v_o);
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
 
-    for (i = 0; i < f + 1; ++i) {
+    for (i = 0; i < (unsigned)(f + 1); ++i) {
         twait(r,ret);
         assert(res[ret][2].is_i() && res[ret][3].is_i());
         n = res[ret][3].as_i();
@@ -187,37 +188,35 @@ tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
     }
     while (cfd) {
         twait { mpfd.read_request(make_event(req)); }
-        std::cout << "request: " << req << std::endl;
         if (!req || !req.is_a() || req.size() < 4 || !req[0].is_i()
             || !req[1].is_i() || !req[2].is_i()) {
 
-            std::cerr << "bad RPC: " << req << std::endl;
+            log << "bad RPC: " << req;
             break;
         }
         
         switch(req[2].as_i()) {
             case PREPARE:
-                std::cout << "prepare" << std::endl;
+                log << "prepare";
                 assert(req.size() == 4);
                 n = req[3].as_i();
                 prepare(mpfd,req,n);
                 break;
             case ACCEPT:
-                std::cout << "accept" << std::endl;
-                std::cout << req << std::endl;
+                log << "accept: " << req;
                 assert(req.size() == 5 && req[4].is_a());
                 n = req[3].as_i();
                 v = req[4];
                 accept(mpfd,req,n,v);
                 break;
             case DECIDED:
-                std::cout << "decided" << std::endl;
+                log << "decided";
                 assert(req.size() == 5 && req[4].is_a());
                 v = req[4];
                 decided(mpfd,req,v);
                 break;
             default:
-                std::cerr << "bad Paxos request: " << req << std::endl;
+                log << "bad Paxos request: " << req;
                 break;
         }
     }
