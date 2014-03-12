@@ -45,14 +45,19 @@ tamed void process(msgpack_fd &mpfd)
     RPC_Msg rpc_request, rpc_reply;
   }
   while(mpfd) {
+    twait { 
     #ifdef RPC_MSG_ISSUE
-    twait { mpfd.read_request(tamer::make_event(rpc_request)); }
+    mpfd.read_request(tamer::make_event(rpc_request.json()));
+    #else
+    mpfd.read_request(tamer::make_event(request.json()));
+    #endif
+    }
+    #ifdef RPC_MSG_ISSUE
     std::cout << "received: " << rpc_request.content() << "\n";
     rpc_reply = RPC_Msg(Json::array("ACK"),request);
     std::cout << "replying: " << rpc_reply.content() << "\n";
     mpfd.write(rpc_reply);
     #else
-    twait { mpfd.read_request(tamer::make_event(request)); }
     std::cout << "received: " << request << "\n";
     reply = Json::array(-1,request[1].as_i(),Json::array("ACK"));
     std::cout << "replying: " << reply << "\n";
