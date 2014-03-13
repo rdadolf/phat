@@ -11,6 +11,7 @@ using namespace phat;
 
 Phat_Server::Phat_Server()
 {
+  listen_port_ = 15810;
   run_master_server(); // FIXME
 }
 

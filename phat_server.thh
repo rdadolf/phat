@@ -11,7 +11,7 @@ private:
   bool i_am_master_;
   tamer::event <> elect_me_;
   typedef enum { FILE=1, DIR } Filetype_t;
-  int listen_port_ = 15810;
+  int listen_port_;
 
   Json fs_image_; // ALL DATA EVER.
 public:
