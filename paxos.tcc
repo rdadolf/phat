@@ -64,7 +64,7 @@ tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
         int n;
         std::vector<int>::size_type i;
         Json v;
-        Json req = Json::array(1,1);
+        Json req;
         tamer::rendezvous<bool> r1;
         tamer::rendezvous<bool> r2;
         bool to;
@@ -94,7 +94,7 @@ start:
         goto start;
     }
     
-    req = Json::array(1,NULL,DECIDED,n_p,v_o);
+    req = Json::array(1,Json::null,DECIDED,n_p,v_o);
     twait { send_to_all(req,make_event()); }
     log << "decided";
 
@@ -112,13 +112,13 @@ tamed void Paxos_Proposer::propose(int n, Json v, tamer::event<> done) {
     }
     n_p++;
     n_o = a = 0;
-    req = Json::array(1,NULL,PREPARE,n_p);
+    req = Json::array(1,Json::null,PREPARE,n_p);
     log << "propose: " << req;
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
 
-    for (i = 0; i < f + 1; ++i) {
+    for (i = 0; i < (unsigned)f + 1; ++i) {
         twait(r,ret);
         assert(res[ret][2].is_i());
         if (res[ret][2].as_i() != PREPARED) 
@@ -146,7 +146,7 @@ tamed void Paxos_Proposer::accept(int n, tamer::event<> done) {
     }
     log << "accept";
     n_p = std::max(n_o,n_p);
-    req = Json::array(1,NULL,ACCEPT,n_p,v_o);
+    req = Json::array(1,Json::null,ACCEPT,n_p,v_o);
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
