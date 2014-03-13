@@ -5,6 +5,9 @@
 #include "clp.h"
 
 #include "puppet.hh"
+#include "phat_server.hh"
+
+using namespace phat;
 
 int chubby_port = 15810;
 int puppet_port = 15808;
@@ -58,8 +61,7 @@ int main(int argc, char **argv)
   }
 
   Server_Puppet puppet_server(puppet_port);
-  //replica_server();
-  //master_server(); // sleeping until consensus says I'm master
+  Phat_Server phat(chubby_port);
 
   tamer::loop();
   tamer::cleanup();

@@ -1,41 +1,37 @@
-#include <string>
-#include <stdint.h>
+#include "string.hh"
+#include "json.hh"
+#include "mpfd.hh"
 
 namespace phat {
 
-// Handle type
-class Handle
-{
-  // FIXME
-};
-
-// Metadata type
-class Metadata
-{
-  // FIXME
-};
-
-// Sequencer type
-class Sequencer
-{
-private:
-  uint64_t v;
-  // FIXME
-};
-
-// Locktype?
-class Locktype
-{
-private:
-  // FIXME
-};
+typedef Json Handle;
+typedef Json Metadata;
+typedef Json Sequencer;
+typedef Json Locktype;
 
 ////////////////////////////////////////////////////////////////////////////////
+typedef struct {
+  struct in_addr ip;
+  int port;
+} Server_t;
 
-class Phat_API
+class Phat_Interface
 {
+private:
+  std::vector<Server_t> replicas_;
+  Server_t master_;
+  msgpack_fd master_fd_;
+  static const int DEFAULT_PHAT_PORT_ = 15810; // default, not guaranteed.
+
+  // sets master_fd_, and possibly master_ and replicas_
+  tamed void connect_to_master(const Server_t contact_point); 
+
+  // Internal RPCs
+  tamed void get_master(tamer::event<RPC_Msg> ev);
+  tamed void get_replica_list(tamer::event<RPC_Msg> ev);
 public:
-  Phat_API();
+  Phat_Interface();
+  Phat_Interface(const Server_t contact_point);
 
   Handle getroot();
   Handle open(Handle root, const std::string subpath);

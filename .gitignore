@@ -3,3 +3,16 @@ phat.hh
 phat
 log.txt
 *.DS_STORE
+*.o
+client_driver.cc
+phat_api.cc
+phat_api.hh
+phat_server.cc
+phat_server.hh
+puppet
+puppet.cc
+puppet.hh
+scratch/ctl
+scratch/ctl.cc
+server_driver.cc
+test/*.hh

@@ -1,0 +1,39 @@
+#include <string>
+#include "json.hh"
+
+namespace phat {
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Phat_Server
+{
+private:
+  bool i_am_master_;
+  tamer::event <> elect_me_;
+  typedef enum { FILE=1, DIR } Filetype_t;
+  int listen_port_ = 15810;
+
+  Json fs_image_; // ALL DATA EVER.
+public:
+  Phat_Server();
+  Phat_Server(int port);
+
+  void run_master_server();
+  void run_replica_server();
+
+  // Utility functions
+  tamed void handle_new_connections(int port);
+  tamed void read_and_dispatch(tamer::fd client);
+
+  // Internal service routines
+  Json get_master(Json args);
+  Json get_replica_list(Json args);
+
+  // Service routines
+  Json getroot(Json args);
+  // FIXME implement the rest...
+
+};
+
+
+} // namespace phat

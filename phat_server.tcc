@@ -3,36 +3,93 @@
 #include "json.hh"
 #include <netdb.h>
 #include "clp.h"
+#include "rpc_msg.hh"
 
-#include "puppet.hh"
+#include "phat_server.hh"
 
-int chubby_port = 15810;
-int puppet_port = 15808;
+using namespace phat;
 
-static Clp_Option options[] = {
-  { "chubby-port", 'p', 0, Clp_ValInt, 0 },
-  { "puppet-port", 'P', 0, Clp_ValInt, 0 },
-};
-
-int main(int argc, char **argv)
+Phat_Server::Phat_Server()
 {
-  tamer::initialize();
+  run_master_server(); // FIXME
+}
 
-  Clp_Parser *clp = Clp_NewParser(argc,argv,sizeof(options)/sizeof(options[0]),options);
-  while(Clp_Next(clp)!=Clp_Done) {
-    if(Clp_IsLong(clp, "chubby-port")) {
-      chubby_port = clp->val.i;
-    }
-    else if(Clp_IsLong(clp, "puppet-port")) {
-      puppet_port = clp->val.i;
-    }
+Phat_Server::Phat_Server(int port)
+{
+  listen_port_ = port;
+  run_master_server(); // FIXME
+}
+
+void Phat_Server::run_master_server()
+{
+  handle_new_connections(listen_port_);
+}
+
+void Phat_Server::run_replica_server()
+{
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+tamed void Phat_Server::handle_new_connections(int port)
+{
+  tvars {
+    tamer::fd client_fd; // FIXME: only one simultaneous client. :(
+    tamer::fd listen_fd;
+  }
+  
+  listen_fd = tamer::tcp_listen(port);
+  if( !listen_fd ) {
+    fprintf(stderr, "Phat server unable to listen on %d: %s.\n", port, strerror(-listen_fd.error()));
+    exit(-1);
   }
 
-  puppet::Puppet_Server puppet_server(puppet_port);
-  //replica_server();
-  //master_server(); // sleeping until consensus says I'm master
-
-  tamer::loop();
-  tamer::cleanup();
-  return 0;
+  while(listen_fd) {
+    twait {
+      listen_fd.accept(make_event(client_fd));
+    }
+    read_and_dispatch(client_fd);
+  }
 }
+
+tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
+{
+  tvars {
+    msgpack_fd mpfd;
+    RPC_Msg request, reply;
+  }
+
+  mpfd.initialize(client_fd);
+  while(mpfd) {
+    twait{ mpfd.read_request(tamer::make_event(request.json())); }
+    if( request.validate() ) {
+      if( request.content()[0]=="get_master" ) {
+        if( i_am_master_ ) {
+          reply = RPC_Msg(Json::array(String("ACK")));
+        } else {
+          // FIXME: Report real master.
+          reply = RPC_Msg(Json::array(String("NACK"),String("NOT_MASTER"),-1,-1));
+        }
+      } else if( request.content()[0]=="get_replica_list" ) {
+        reply = RPC_Msg(Json::array(String("NACK"),String("NYI")));
+      } else if( request.content()[0]=="getroot" ) {
+        reply = RPC_Msg( getroot(request.content()), request );
+      //} else if( request.content()[0]=="<other thing here>" ) {
+      } else {
+        reply = RPC_Msg( Json::array(String("NACK")), request );
+      }
+    } else {
+      reply = RPC_Msg( Json::array(String("NACK")), request );
+    }
+    mpfd.write(reply);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+Json Phat_Server::getroot(Json args)
+{
+  return Json::array(String("/"));
+}
+

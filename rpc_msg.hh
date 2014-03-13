@@ -20,9 +20,9 @@ class RPC_Msg {
       return data_.is_array() && data_[0].is_int() && data_[1].is_int() && data_[2].is_array();
     }
 
-    Json& json() { std::cout<<"RPC_Msg::json() called:"<<data_<<"\n"; return data_; }
-    operator Json() {  std::cout<<"RPC_Msg::Json typecast:"<<data_<<"\n"; return data_; }
-    bool operator!() {  std::cout<<"RPC_Msg::! operator:"<<data_<<"\n"; return !data_; }
-    operator bool() {  std::cout<<"RPC_Msg::bool operator:"<<data_<<"\n"; return data_; }
+    Json& json() { return data_; }
+    operator Json() { return data_; }
+    bool operator!() { return !data_; }
+    operator bool() { return data_; }
     Json& content() { return data_[2]; }
 };

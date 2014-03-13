@@ -21,9 +21,9 @@ class Client_Puppet : public puppet::Puppet_Server
 {
 private:
   // FIXME: add lhs state for puppet scripts
-  Phat_API phat_;
+  Phat_Interface phat_;
 public:
-  Client_Puppet(int port, Phat_API api) : Puppet_Server(port), phat_(api) {}
+  Client_Puppet(int port) : Puppet_Server(port) {}
 
   void dispatch(String tag, Json args);
 
@@ -142,8 +142,7 @@ int main(int argc, char **argv)
     }
   }
 
-  Phat_API phat;
-  Client_Puppet puppet_server(puppet_port,phat);
+  Client_Puppet puppet_server(puppet_port);
 
   tamer::loop();
   tamer::cleanup();

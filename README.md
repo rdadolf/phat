@@ -1,6 +1,6 @@
-# phat
+# Phat/Joan
 
-An implementation of the Chubby lock service protocol in MPRPC.
+An implementation of the Chubby lock service protocol in MPRPC. Named Joan.
 
 ## Installation
 

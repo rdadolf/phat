@@ -150,9 +150,19 @@ tamed void Puppet::send_sleep(int seconds, tamer::event<> ev)
 
 tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
 {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("getroot"))); // FIXME: lhs
+    RPC_Msg reply;
+  }
   #if DEBUG
   printf("Sending getroot\n");
   #endif
+
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  std::cout << "Received: " << reply.json() << "\n";
+  // FIXME: validate
+  // FIXME: assert not NACK
+  ev();
 
   ev();
 }
@@ -289,21 +299,19 @@ tamed void Puppet_Server::read_and_dispatch()
 
   while(puppeteer_fd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    reply = RPC_Msg(Json::array(String("ACK")),request);
+    if(request.validate() ) {
+      reply = RPC_Msg(Json::array(String("ACK")),request);
+    } else {
+      reply = RPC_Msg(Json::array(String("NACK")),request);
+      continue; // Don't dispatch on invalid RPCs.
+    }
+    // FIXME:
+    // This is a little odd. We write the reply *first*, before the
+    // action has been taken. This is because some of the operations
+    // do not return or block. We want to be able to make progress
+    // in the puppet server. There is probably a better way to do this.
     mpfd.write(reply);
     std::cout << "request: " << request.json() << std::endl;
-    // Validate (valid, array, len>1, tag first)
-#if 0
-    /if( !in_msg || !in_msg.is_a() || !in_msg.size()>0 || !in_msg[0].is_s() ) {
-      fprintf(stderr,"is_null %d\n", in_msg.is_null());
-      fprintf(stderr,"!in_msg=%d\n", !in_msg);
-      fprintf(stderr,"!in_msg.is_a()=%d\n", !in_msg.is_a());
-      fprintf(stderr,"!in_msg.size()>0=%d\n", !in_msg.size()>0);
-      fprintf(stderr,"!in_msg[0].is_s()=%d\n", !in_msg[0].is_s());
-      fprintf(stderr,"Malformed puppet message received.\n");
-      continue; // Doesn't look like a puppet message, toss it.
-    }
-#endif
     tag = request.content()[0].as_s();
     dispatch(tag,request.content());
   }
