@@ -51,10 +51,7 @@ puppet: puppet.o puppet.hh rpc_msg.hh $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
 
 paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
-
-log_test: ex/log_test.o $(MPRPC_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
-
+	
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
 	$(TAMERC) $(TAMERFLAGS) $< -o $@
