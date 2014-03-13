@@ -3,8 +3,8 @@ tamed void run()
   tvars {
     puppet::Puppet A, B;
   }
-  puppet::spawn("client_driver -P 15808");
-  puppet::spawn("server_driver -P 15807");
+  puppet::spawn("./client_driver -P 15808");
+  puppet::spawn("./server_driver -P 15807");
   sleep(1);
   twait {
     A.connect("localhost",15808,make_event());
