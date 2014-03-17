@@ -3,23 +3,17 @@
 #include <assert.h>
 #include <map>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include "mpfd.hh"
 #include "json.hh"
 #include <netdb.h>
 #include <errno.h>
 #include "rpc_msg.hh"
+//#include "log.hh"
 
 namespace puppet {
-
-void spawn(String command)
-{
-  pid_t me;
-  printf("Spawning '%s'\n", command.c_str());
-  if( (me=fork())==0 ) { // child
-    system(command.c_str());
-    exit(0);
-  } // else parent
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,10 +22,13 @@ class Puppet
 {
 private:
   msgpack_fd mpfd_;
+  pid_t child_process_;
 public:
   Puppet();
+  ~Puppet();
 
   // Setup operations
+  void spawn(String command);
   tamed void connect(String hostname, int port, tamer::event<> ev);
   void disconnect();
 
@@ -51,10 +48,36 @@ public:
 
 Puppet::Puppet()
 {
+  child_process_ = 0;
   #ifdef DEBUG
   printf("Puppet created.\n");
   #endif
 }
+
+Puppet::~Puppet()
+{
+  disconnect();
+  if(child_process_>0) {
+    printf("Sending SIGTERM to process %d\n", child_process_);
+    kill(child_process_, SIGTERM);
+    waitpid(child_process_,NULL,WEXITED);
+  }
+  #ifdef DEBUG
+  printf("Puppet destroyed.\n");
+  #endif
+}
+
+void Puppet::spawn(String command)
+{
+  printf("Spawning '%s'\n", command.c_str());
+  if( (child_process_=fork())==0 ) { // child
+    //printf("execlp|%s|%s|%s|\n", "sh", "-c", command.c_str());
+    execlp("sh","sh","-c",command.c_str(),(char *)NULL);
+    exit(0);
+  }// else parent
+}
+
+
 
 tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
 {
@@ -162,7 +185,6 @@ tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
   std::cout << "Received: " << reply.json() << "\n";
   // FIXME: validate
   // FIXME: assert not NACK
-  ev();
 
   ev();
 }
@@ -228,7 +250,7 @@ class Puppet_Server
 {
 private:
   tamer::fd listen_fd;
-  tamer::fd puppeteer_fd;
+  tamer::fd client_fd;
   String s;
 public:
   Puppet_Server(int port);
@@ -278,7 +300,7 @@ tamed void Puppet_Server::run_puppet_server(int port)
   #endif
   while(listen_fd) {
     twait {
-      listen_fd.accept(make_event(puppeteer_fd));
+      listen_fd.accept(make_event(client_fd));
     }
     read_and_dispatch();
   }
@@ -292,13 +314,15 @@ tamed void Puppet_Server::read_and_dispatch()
     String tag;
   }
 
-  mpfd.initialize(puppeteer_fd);
+  mpfd.initialize(client_fd);
   #ifdef DEBUG
   printf("Puppet received connection\n");
   #endif
 
-  while(puppeteer_fd) {
+  while(client_fd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
+    if(!mpfd)
+      break;
     if(request.validate() ) {
       reply = RPC_Msg(Json::array(String("ACK")),request);
     } else {
@@ -315,7 +339,7 @@ tamed void Puppet_Server::read_and_dispatch()
     tag = request.content()[0].as_s();
     dispatch(tag,request.content());
   }
-  puppeteer_fd.close();
+  client_fd.close();
 }
 
 void Puppet_Server::dispatch(String tag, Json args)

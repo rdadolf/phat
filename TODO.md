@@ -5,6 +5,7 @@
 ## Reminders
 - May need to add tamer events as a parameter to Phat_Server handlers.
 - Check that RPC_Msg::validate() is used everywhere. `NACK` back as necessary.
+- Unique ID on every FS object, because Chubby is not duck-typed.
 
 ## Bugs
 

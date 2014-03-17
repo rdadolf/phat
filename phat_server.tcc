@@ -64,6 +64,8 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
   mpfd.initialize(client_fd);
   while(mpfd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
+    if(!mpfd)
+      break;
     if( request.validate() ) {
       if( request.content()[0]=="get_master" ) {
         if( i_am_master_ ) {
