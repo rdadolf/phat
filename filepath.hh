@@ -11,7 +11,7 @@ void print_json(Json& j) {
 Json parse_filepath(const char* str) {
     Json ret = Json::make_array();
     String* tmp = new String();
-    while (strlen(str) > 0) {
+    while (*str) {
         if (*str == '/') {
             if (tmp->length() > 0) {
                 ret.push_back(tmp->c_str());
