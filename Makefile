@@ -33,23 +33,26 @@ LDFLAGS= -lrt -lpthread -lm $(LIBS)
 MPRPC_SRC=mprpc/msgpack.cc mprpc/.deps/mpfd.cc mprpc/string.cc mprpc/straccum.cc mprpc/json.cc mprpc/compiler.cc mprpc/clp.c
 MPRPC_OBJ=mprpc/msgpack.o mprpc/mpfd.o mprpc/string.o mprpc/straccum.o mprpc/json.o mprpc/compiler.o mprpc/clp.c
 MPRPC_HDR=mprpc/msgpack.hh mprpc/.deps/mpfd.hh mprpc/string.hh mprpc/straccum.hh mprpc/json.hh mprpc/compiler.hh mprpc/clp.h
+
+UTIL_OBJ=network.o
+
 CLIENT_HDR=phat_api.hh puppet.hh rpc_msg.hh log.hh network.hh
 SERVER_HDR=phat_server.hh puppet.hh rpc_msg.hh log.hh network.hh
 
 # Build rules
 client_driver.o: client_driver.cc $(CLIENT_HDR)
 phat_api.o: phat_api.cc phat_api.hh $(CLIENT_HDR)
-client_driver: client_driver.o phat_api.o $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
-	$(CXX) client_driver.o phat_api.o $(MPRPC_OBJ) -o client_driver $(LDFLAGS)
+client_driver: client_driver.o phat_api.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+	$(CXX) client_driver.o phat_api.o $(MPRPC_OBJ) $(UTIL_OBJ) -o client_driver $(LDFLAGS)
 
 server_driver.o: server_driver.cc $(SERVER_HDR)
 phat_server.o: phat_server.cc $(SERVER_HDR)
-server_driver: server_driver.o phat_server.o $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
-	$(CXX) server_driver.o phat_server.o $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
+server_driver: server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+	$(CXX) server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
 
 TEST_SCRIPT ?= test/simple.hh
-puppet: puppet.o puppet.hh rpc_msg.hh $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
-	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(MPRPC_SRC) -o puppet $(LDFLAGS)
+puppet: puppet.o puppet.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
+	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
 
 paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
