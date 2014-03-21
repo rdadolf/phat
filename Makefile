@@ -1,7 +1,8 @@
 .PHONY: default test
 
-CPP_TEMPS= client_driver.cc paxos.cc paxos.hh paxos_test.cc phat_api.cc phat_api.hh phat_server.cc puppet.cc puppet.hh server_driver.cc
-.SECONDARY:$(CPP_TEMPS)
+CPP_TEMPS= client_driver.cc paxos.cc paxos_test.cc phat_api.cc phat_server.cc puppet.cc server_driver.cc
+HPP_TEMPS= paxos.hh phat_api.hh phat_server.hh puppet.hh
+.SECONDARY:$(CPP_TEMPS) $(HPP_TEMPS)
 
 default: server_driver client_driver puppet
 
@@ -22,7 +23,8 @@ getroot: clean_puppet
 DEBUG=-g -DDEBUG=1
 
 TAMERC=mprpc/tamer/compiler/tamer
-TAMERFLAGS=-n
+#TAMERFLAGS=-n
+TAMERFLAGS=-n -L
 CXX=g++
 CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
@@ -31,8 +33,8 @@ LDFLAGS= -lrt -lpthread -lm $(LIBS)
 MPRPC_SRC=mprpc/msgpack.cc mprpc/.deps/mpfd.cc mprpc/string.cc mprpc/straccum.cc mprpc/json.cc mprpc/compiler.cc mprpc/clp.c
 MPRPC_OBJ=mprpc/msgpack.o mprpc/mpfd.o mprpc/string.o mprpc/straccum.o mprpc/json.o mprpc/compiler.o mprpc/clp.c
 MPRPC_HDR=mprpc/msgpack.hh mprpc/.deps/mpfd.hh mprpc/string.hh mprpc/straccum.hh mprpc/json.hh mprpc/compiler.hh mprpc/clp.h
-CLIENT_HDR=phat_api.hh puppet.hh rpc_msg.hh
-SERVER_HDR=phat_server.hh puppet.hh rpc_msg.hh
+CLIENT_HDR=phat_api.hh puppet.hh rpc_msg.hh log.hh network.hh
+SERVER_HDR=phat_server.hh puppet.hh rpc_msg.hh log.hh network.hh
 
 # Build rules
 client_driver.o: client_driver.cc $(CLIENT_HDR)
@@ -68,3 +70,4 @@ ex/log_test.o: ex/log_test.cc
 clean:
 	rm -f client_driver server_driver puppet paxos_test *.o
 	rm -f $(CPP_TEMPS)
+	rm -f $(HPP_TEMPS)

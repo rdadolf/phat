@@ -9,7 +9,15 @@
 #include <fstream>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include "json.hh"
+
+#include <string.h> // strerror
+#include <errno.h> // errno types
+
+#define INFO() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] INFO: "
+#define WARN() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] WARN: "
+#define ERROR() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] ERROR: "
 
 typedef std::string _str;
 
