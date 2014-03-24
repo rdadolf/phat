@@ -1,6 +1,8 @@
 #include <string>
 #include <stdint.h>
 #include "rpc_msg.hh"
+#include "log.hh"
+#include "network.hh"
 
 #include "phat_api.hh"
 
@@ -8,68 +10,97 @@ using namespace phat;
 
 Phat_Interface::Phat_Interface()
 {
-  Server_t default_master;
-  default_master.port = DEFAULT_PHAT_PORT_;
-  default_master.ip.s_addr = INADDR_LOOPBACK;
-  connect_to_master(default_master);
+  Server_t default_contact_point;
+  default_contact_point.port = DEFAULT_PHAT_PORT_;
+  default_contact_point.ip.s_addr = htonl(INADDR_LOOPBACK);
+  init(default_contact_point);
 }
 
 Phat_Interface::Phat_Interface(const Server_t contact_point)
 {
-  connect_to_master(contact_point);
+  init(contact_point);
 }
 
-tamed void Phat_Interface::connect_to_master(const Server_t contact_point)
+tamed void Phat_Interface::init(const Server_t contact_point)
+{
+  INFO() << "init called";
+
+  // Assume contact point is master. They'll tell us otherwise.
+  master_ = contact_point;
+  replicas_.push_back(master_);
+  epoch_number_ = -1; // A flag that we're new and also before any valid epoch.
+
+  // Now ask our "master" who the master is.
+  twait { get_master(make_event()); }
+
+  // Now ask for replica list
+  twait { get_replica_list(make_event()); } // FIXME: NYI
+
+}
+
+tamed void Phat_Interface::get_master(tamer::event<> ev)
 {
   tvars {
-    tamer::fd contact_fd;
-    bool known_master = false;
-    RPC_Msg master_json, replicas_json;
+    RPC_Msg request_master, reply_master;
+    Json master_info;
+    bool master_known=false;
+    tamer::fd cfd;
   }
 
-  // Make contact with *some* server.
-  master_ = contact_point;
-  twait{ tamer::tcp_connect(master_.ip, master_.port, make_event(contact_fd)); }
-  if( !contact_fd ) {
-    fprintf(stderr,"Couldn't connect to contact point %d on port %d: %s\n", master_.ip.s_addr, master_.port, strerror(-contact_fd.error()));
-    exit(-1);
-  }
-  master_fd_.initialize(contact_fd);
+  INFO() << "get_master called";
 
-  while( !known_master ) {
-    twait{ get_master(make_event(master_json)); }
-    // FIXME: more content validation
-    if( master_json.content().is_a()
-     && (master_json.content()[0].is_i() || master_json.content()[0].is_s()) // in_addr or hostname
-     && master_json.content()[1].is_i() // port number
-      ) {
-      if( master_json.content()[0].is_s() ) {
-        // FIXME: hostname lookup
-      } else {
-        master_.ip.s_addr = master_json.content()[0].as_i();
-      }
-      master_.port = master_json.content()[1].as_i();
-    } else {
-      fprintf(stderr,"Received invalid master contact info from server.\n");
+  do {
+    INFO() << "Attempting to contact master " << server_string(master_);
+    twait { tamer::tcp_connect(master_.ip, master_.port, make_event(cfd)); }
+    if( !cfd ) {
+      ERROR() << "Couldn't connect to potential master at " << server_string(master_);
       exit(-1);
     }
-  }
+    master_fd_.initialize(cfd); // Assume we have the true master.
+    INFO() << "Potential master connected. Requesting master info.";
+    request_master = RPC_Msg(Json::array(String("get_master")));
+    twait { master_fd_.call(request_master, make_event(reply_master.json())); }
+    if( !master_fd_ ) { // disconnected
+      ERROR() << "Master candidate unexpectedly hungup. No contact points.";
+      // FIXME: Do we really have no contacts here? If so, must that be true?
+      exit(-1);
+    }
+// FIXME: validate
+    // FIXME: validate
+    if( reply_master.content()[0].as_s()=="ACK" ) {
+      master_known = true;
+      // master_ data already set.
+    } else if( reply_master.content()[0].as_s()=="NACK" ) {
+      master_known = false;
+      if( reply_master.content()[1].as_s()=="NOT_MASTER" ) {
+        if( reply_master.content()[2].is_s() ) {
+          get_ip_address( reply_master.content()[2].as_s().c_str(), master_.ip );
+        } else if( reply_master.content()[2].is_i() ) {
+          get_ip_address( reply_master.content()[2].as_i(), master_.ip );
+        }
+        master_.port = reply_master.content()[3].as_i();
+      }
+      // FIXME: need handler for wrong epoch number reply
+      // FIXME: need handler for arbitrary NACK (other than above)
+    }
+  } while( !master_known );
 
-  // FIXME: Do this!
-  // twait{ get_replica_list(make_event(replicas_json)); }
+  INFO() << "Master identified";
+
+  ev(); // FIXME
 }
 
-tamed void Phat_Interface::get_master(tamer::event<RPC_Msg> ev)
+tamed void Phat_Interface::get_replica_list(tamer::event<> ev)
 {
-  ev(RPC_Msg(Json::null)); // FIXME
-}
-
-tamed void Phat_Interface::get_replica_list(tamer::event<RPC_Msg> ev)
-{
-  ev(RPC_Msg(Json::null)); // FIXME
+  ev(); // FIXME
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+tamed void wait_for_notifications(tamer::event<Notification> ev)
+{
+  // FIXME Handle notifications
+}
 
 Handle Phat_Interface::getroot()
 {

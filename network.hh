@@ -14,6 +14,7 @@ typedef struct {
   int port;
 } Server_t;
 
+const String& server_string(const Server_t& server);
 
 // One overloaded interface for ip lookup.
 // This way, we can take whatever is in Json and just use it.

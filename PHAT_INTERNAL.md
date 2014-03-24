@@ -35,6 +35,7 @@ For instance, the `NYI` reason tells us that we're lazy programmers who haven't 
 Request: `array( string tag:"get_master" )`
 Reply: `array( string tag:"ACK" )`
 Reply: `array( string tag:"NACK", string reason:"NOT_MASTER", int ip | string hostname, int port )`
+Reply: `array( string tag:"NACK", string reason:"OLD_EPOCH", int epoch )`
 
 Could be one of two replies. The `"NACK"` form is a general type of message that could be received from a lot of different places, which is why we want the `reason` field.
 

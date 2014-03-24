@@ -23,8 +23,8 @@ getroot: clean_puppet
 DEBUG=-g -DDEBUG=1
 
 TAMERC=mprpc/tamer/compiler/tamer
-#TAMERFLAGS=-n
-TAMERFLAGS=-n -L
+TAMERFLAGS=-n
+#TAMERFLAGS=-n -L
 CXX=g++
 CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a

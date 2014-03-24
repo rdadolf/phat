@@ -11,7 +11,8 @@
 #include <netdb.h>
 #include <errno.h>
 #include "rpc_msg.hh"
-//#include "log.hh"
+#include "log.hh"
+#include "network.hh"
 
 namespace puppet {
 
@@ -49,32 +50,27 @@ public:
 Puppet::Puppet()
 {
   child_process_ = 0;
-  #ifdef DEBUG
-  printf("Puppet created.\n");
-  #endif
+  INFO() << "Puppet created.";
 }
 
 Puppet::~Puppet()
 {
   disconnect();
   if(child_process_>0) {
-    printf("Sending SIGTERM to process %d\n", child_process_);
+    INFO() << "Sending SIGTERM to process " << child_process_;
     kill(child_process_, SIGTERM);
     waitpid(child_process_,NULL,WEXITED);
   }
-  #ifdef DEBUG
-  printf("Puppet destroyed.\n");
-  #endif
+  INFO() << "Puppet destroyed.";
 }
 
 void Puppet::spawn(String command)
 {
-  printf("Spawning '%s'\n", command.c_str());
+  INFO() << "Spawning " << command;
   if( (child_process_=fork())==0 ) { // child
-    //printf("execlp|%s|%s|%s|\n", "sh", "-c", command.c_str());
     execlp("sh","sh","-c",command.c_str(),(char *)NULL);
     exit(0);
-  }// else parent
+  } // else parent
 }
 
 
@@ -86,31 +82,18 @@ tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
     tamer::fd cfd;
     msgpack_fd mpfd;
   }
-  #ifdef DEBUG
-  printf("Looking up %s:%d\n", hostname.c_str(), port);
-  #endif
+  INFO() << "Looking up " << hostname << ":" << port;
 
-  { // Required for local variable declaration (in_addr_t a).
-    in_addr_t a = inet_addr(hostname.c_str());
-    if ( a != INADDR_NONE ) {
-      hostip.s_addr = a;
-    } else {
-      struct hostent* hp = gethostbyname(hostname.c_str());
-      if( hp==NULL || hp->h_length != 4 || hp->h_addrtype != AF_INET ) {
-        fprintf(stderr,"Can't find %s: '%s'\n", hostname.c_str(), strerror(errno));
-        exit(-1);
-      }
-      hostip = *((struct in_addr*) hp->h_addr);
-    }
+  if( !get_ip_address( hostname.c_str(), hostip ) ) {
+    ERROR() << "Can't find " << hostname << ": " << strerror(errno);
+    exit(-1);
   }
   
-  #ifdef DEBUG
-  printf("Connecting to %d:%d\n", hostip.s_addr, port);
-  #endif
+  INFO() << "Connecting to " << inet_ntoa(hostip) << ":" << port;
 
   twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
   if( !cfd ) {
-    fprintf(stderr,"Couldn't connect to %s: '%s'\n", hostname.c_str(), strerror(-cfd.error()));
+    ERROR() << "Couldn't connect to " << hostname << ": " << strerror(-cfd.error());
     exit(-1);
   }
 
@@ -121,9 +104,7 @@ tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
 
 void Puppet::disconnect()
 {
-  #ifdef DEBUG
-  printf("Disconnecting\n");
-  #endif
+
 }
 
 // Basic operations
@@ -135,11 +116,10 @@ tamed void Puppet::send_print(String name, tamer::event<> ev)
     RPC_Msg reply;
   }
 
-  #if DEBUG
-  printf("Sending print\n");
-  #endif
+  INFO() << "Sending puppet command: print";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
+
   // FIXME: validate
   // FIXME: assert not NACK
   ev();
@@ -149,23 +129,20 @@ tamed void Puppet::send_die(tamer::event<> ev){
   tvars {
     Json msg;
   }
-  #if DEBUG
-  printf("Sending die\n");
-  #endif
 
-  msg = Json::array(String("die"));
-  //msg = Json::array(String("die"));
-  std::cout << "request: " << msg << std::endl;
-  mpfd_.write(msg);
-  std::cout << "request: " << msg << std::endl;
+  INFO() << "Sending puppet command: die";
+
+  // FIXME
+
   ev();
 }
 
 tamed void Puppet::send_sleep(int seconds, tamer::event<> ev)
 {
-  #if DEBUG
-  printf("Sending sleep\n");
-  #endif
+  INFO() << "Sending puppet command: sleep";
+
+  // FIXME
+
   ev();
 }
 
@@ -177,12 +154,11 @@ tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
     RPC_Msg request = RPC_Msg(Json::array(String("getroot"))); // FIXME: lhs
     RPC_Msg reply;
   }
-  #if DEBUG
-  printf("Sending getroot\n");
-  #endif
+  INFO() << "Sending puppet command: getroot";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  std::cout << "Received: " << reply.json() << "\n";
+  INFO() << "Received: " << reply.json();
+
   // FIXME: validate
   // FIXME: assert not NACK
 
@@ -191,9 +167,7 @@ tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
 
 tamed void Puppet::send_open(String lhs, String root, String subpath, tamer::event<> ev)
 {
-  #if DEBUG
-  printf("Sending open\n");
-  #endif
+  INFO() << "Sending puppet command: open";
 
   ev();
 }
@@ -281,23 +255,18 @@ public:
 
 Puppet_Server::Puppet_Server(int port=15808)
 {
-  printf("Asked for %d\n", port);
   run_puppet_server(port);
 }
 
 tamed void Puppet_Server::run_puppet_server(int port)
 {
-  #ifdef DEBUG
-  printf("Puppet alive, trying port %d.\n",port);
-  #endif
   listen_fd = tamer::tcp_listen(port);
   if( !listen_fd ) {
-    fprintf(stderr,"Puppet failed to listen: %s.\n",strerror(-listen_fd.error()));
+    ERROR() << "Puppet failed to listen: " << strerror(-listen_fd.error());
     exit(-1);
   }
-  #ifdef DEBUG
-  printf("Puppet listening.\n");
-  #endif
+  INFO() << "Puppet listening on port " << port;
+
   while(listen_fd) {
     twait {
       listen_fd.accept(make_event(client_fd));
@@ -315,9 +284,7 @@ tamed void Puppet_Server::read_and_dispatch()
   }
 
   mpfd.initialize(client_fd);
-  #ifdef DEBUG
-  printf("Puppet received connection\n");
-  #endif
+  INFO() << "Puppet received connection";
 
   while(client_fd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
@@ -335,7 +302,6 @@ tamed void Puppet_Server::read_and_dispatch()
     // do not return or block. We want to be able to make progress
     // in the puppet server. There is probably a better way to do this.
     mpfd.write(reply);
-    std::cout << "request: " << request.json() << std::endl;
     tag = request.content()[0].as_s();
     dispatch(tag,request.content());
   }
@@ -355,17 +321,15 @@ void Puppet_Server::dispatch(String tag, Json args)
 
 void Puppet_Server::service_print(Json args)
 {
-  #ifdef DEBUG
-  printf("Puppet printing.\n");
-  #endif
+  INFO() << "Puppet printing";
+
   std::cout << args[1] << "\n";
 }
 
 void Puppet_Server::service_die(Json args)
 {
-  #ifdef DEBUG
-  printf("Puppet dying.\n");
-  #endif
+  INFO() << "Puppet dying";
+
   exit(0);
 }
 
@@ -379,9 +343,8 @@ tamed void Puppet_Server::service_sleep(Json args)
   }
   i = args[1].as_i();
   assert((i>0) && (i<1000) && "Ridiculous sleep time requested. Corruption?\n");
-  #ifdef DEBUG
-  printf("Puppet sleeping.\n");
-  #endif
+  INFO() << "Puppet sleeping.";
+
   twait { tamer::at_delay(i,make_event()); }
 }
 

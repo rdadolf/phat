@@ -1,5 +1,14 @@
 #include "network.hh"
 
+const String& server_string(const Server_t& server)
+{
+  static String retval;
+  retval  = String(inet_ntoa(server.ip));
+  retval += String(":");
+  retval += String(server.port);
+  return retval;
+}
+
 bool get_ip_address( const char *hostname, struct in_addr &host )
 {
   in_addr_t ip;

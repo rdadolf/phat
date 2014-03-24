@@ -9,7 +9,8 @@
 #ifndef TEST_SCRIPT
 tamed void run()
 {
-  printf("No test script specified. Exiting.\n");
+  ERROR() << "No test script specified. Exiting.";
+  exit(-1);
 }
 #else
   #include TEST_SCRIPT

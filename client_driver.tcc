@@ -9,11 +9,11 @@
 
 using namespace phat;
 
-int chubby_port = 15810;
+int phat_port = 15810;
 int puppet_port = 15808;
 
 static Clp_Option options[] = {
-  { "chubby-port", 'p', 0, Clp_ValInt, 0 },
+  { "phat-port", 'p', 0, Clp_ValInt, 0 },
   { "puppet-port", 'P', 0, Clp_ValInt, 0 },
 };
 
@@ -23,7 +23,7 @@ private:
   // FIXME: add lhs state for puppet scripts
   Phat_Interface phat_;
 public:
-  Client_Puppet(int port) : Puppet_Server(port) {}
+  Client_Puppet(int puppet_port) : Puppet_Server(puppet_port) {}
 
   void dispatch(String tag, Json args);
 
@@ -41,6 +41,8 @@ public:
 };
 
 
+// Called by the puppet server class's internals.
+// Extensible dispatch.
 void Client_Puppet::dispatch(String tag, Json args)
 {
   puppet::Puppet_Server::dispatch(tag, args);
@@ -74,6 +76,7 @@ tamed void Client_Puppet::service_getroot(Json args)
 {
   Handle h;
   h = phat_.getroot();
+  // FIXME: storage for h is specified by lhs in args, do something with it
 }
 
 tamed void Client_Puppet::service_open(Json args)
@@ -134,8 +137,8 @@ int main(int argc, char **argv)
 
   Clp_Parser *clp = Clp_NewParser(argc,argv,sizeof(options)/sizeof(options[0]),options);
   while(Clp_Next(clp)!=Clp_Done) {
-    if(Clp_IsLong(clp, "chubby-port")) {
-      chubby_port = clp->val.i;
+    if(Clp_IsLong(clp, "phat-port")) {
+      phat_port = clp->val.i;
     }
     else if(Clp_IsLong(clp, "puppet-port")) {
       puppet_port = clp->val.i;
