@@ -14,6 +14,8 @@ Path strings are UNIX-style, `/`-separated directories.
 
 Filetype is either `file` or `dir`.
 
+*Will likely need to edit this to deal with locks and whether a file is open or not...*
+
 #### Sequencer:
 **NYI**
 

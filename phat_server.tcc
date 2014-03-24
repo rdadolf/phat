@@ -6,6 +6,7 @@
 #include "rpc_msg.hh"
 #include "log.hh"
 #include "network.hh"
+#include "filepath.hh"
 
 #include "phat_server.hh"
 
