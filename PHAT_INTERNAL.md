@@ -20,6 +20,44 @@ Filetype is either `file` or `dir`.
 #### Locktype:
 **NYI**
 
+#### Filesystem:
+`{
+    String name: 
+        array(
+            Metadata,
+            Contents)
+}`
+
+<pre>Contents := 
+    | file is `dir`: filesystem 
+    | file is `file`: byte stream
+</pre>
+
+**Examples:**
+
+Empty root: <pre>
+Filesystem root = {
+    "/": array(
+        array("/",DIR),
+        {}
+    )
+}</pre>
+
+Root with a file in it:
+<pre>
+Filesystem files = {
+    "/": array(
+        array("/",DIR),
+        {
+            "hw.txt": array(
+                array("hw.txt",FILE),
+                "Hello, World!"
+            )
+        }
+    )
+}
+</pre>
+
 ## PhatRPC
 
 Phat RPC messages are also Json objects. Thus, we need structure for them.
