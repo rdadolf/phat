@@ -14,6 +14,7 @@ private:
   int listen_port_;
 
   Json fs_image_; // ALL DATA EVER.
+  Json* traverse_files(Json& root, Json path);
 public:
   Phat_Server();
   Phat_Server(int port);
@@ -31,6 +32,11 @@ public:
 
   // Service routines
   Json getroot(Json args);
+  Json open(Json root, const char* subpath);
+  Json mkfile(Json root, const char* subpath, const char* data);
+  Json mkdir(Json root, const char* subpath);
+  const char* getcontents(Json root, const char* subpath);
+  Json putcontents(Json root, const char* subpath, const char* data);
   // FIXME implement the rest...
 
 };

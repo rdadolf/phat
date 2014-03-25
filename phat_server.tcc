@@ -99,6 +99,75 @@ Json Phat_Server::getroot(Json args)
   return Json::array(String("/"));
 }
 
+Json* Phat_Server::traverse_files(Json& root, Json path) {
+    Json* ret = &root;
+    for (int i = 0; i < path.size(); ++i) {
+        assert(path[i].is_s());
+        if ((*ret)[path[i].as_s()] == Json::null) 
+            return NULL;
+        assert((*ret)[path[i].as_s()][0][1].is_i() 
+                && (*ret)[path[i].as_s()][0][1].as_i() == DIR);
+        Json& tmp = (*ret)[path[i].as_s()][1];
+        ret = &tmp;
+    }
+    return ret;
+}
+
+Json Phat_Server::open(Json root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    (void) ret;
+    return root;
+}
+
+Json Phat_Server::mkfile(Json root, const char* subpath, const char* data) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    if (ret)
+        ret->set(name,Json::array(Json::array(name,FILE),data));
+    return root;
+}
+
+Json Phat_Server::mkdir(Json root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    if(ret)
+        ret->set(name,Json::array(Json::array(name,DIR),Json::make_object()));
+    return root;
+}
+
+const char* Phat_Server::getcontents(Json root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    const char* data = NULL;
+    if (ret) {
+        assert((*ret)[name][0][1].is_i() && (*ret)[name][0][1].as_i() == FILE);
+        assert((*ret)[name][1].is_s());
+        data = (*ret)[name][1].as_s().c_str();
+    }
+    return data;
+}
+
+Json Phat_Server::putcontents(Json root, const char* subpath, const char* data) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    if (ret) {
+        assert((*ret)[name][0][1].is_i() && (*ret)[name][0][1].as_i() == FILE);
+        (*ret)[name][1] = data;
+    }
+    return root;
+}
+
 Json Phat_Server::get_master(Json args)
 {
   INFO() << "get_master service routine called";
