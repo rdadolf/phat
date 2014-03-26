@@ -37,6 +37,9 @@ public:
   Json mkdir(Json root, const char* subpath);
   const char* getcontents(Json root, const char* subpath);
   Json putcontents(Json root, const char* subpath, const char* data);
+  Json readdir(Json root, const char* subpath);
+  Json stat(Json root, const char* subpath);
+  void remove(Json& root, const char* subpath);
   // FIXME implement the rest...
 
 };

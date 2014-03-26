@@ -148,7 +148,7 @@ const char* Phat_Server::getcontents(Json root, const char* subpath) {
     path.pop_back();
     Json* ret = traverse_files(root,path);
     const char* data = NULL;
-    if (ret) {
+    if (ret && (*ret)[name]) {
         assert((*ret)[name][0][1].is_i() && (*ret)[name][0][1].as_i() == FILE);
         assert((*ret)[name][1].is_s());
         data = (*ret)[name][1].as_s().c_str();
@@ -161,11 +161,53 @@ Json Phat_Server::putcontents(Json root, const char* subpath, const char* data) 
     String name = path.back().as_s();
     path.pop_back();
     Json* ret = traverse_files(root,path);
-    if (ret) {
+    if (ret && (*ret)[name]) {
         assert((*ret)[name][0][1].is_i() && (*ret)[name][0][1].as_i() == FILE);
         (*ret)[name][1] = data;
     }
     return root;
+}
+
+Json Phat_Server::readdir(Json root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    Json *p = traverse_files(root,path);
+    Json ret = Json::make_array();
+    if (p) {
+        Json::object_iterator it = p->obegin();
+        while (it) {
+            Json tmp = Json::make_object();
+            tmp.set(it->first,it->second[0]);
+            ret.push_back(tmp);
+            it++;
+        }
+    }
+    return ret;
+}
+
+Json Phat_Server::stat(Json root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    if (ret && (*ret)[name]) {
+        return (*ret)[name][0];
+    }
+    return Json::null;
+}
+
+void Phat_Server::remove(Json& root, const char* subpath) {
+    Json path = parse_filepath(subpath);
+    String name = path.back().as_s();
+    path.pop_back();
+    Json* ret = traverse_files(root,path);
+    if (ret && (*ret)[name]) {
+        // FIXME: check if file is open, by someone else?
+        std::cout << "here: " << name <<std::endl;
+        if ((*ret)[name][0][1].as_i() == DIR && !(*ret)[name][1].empty())
+            return;
+        ret->unset(name);
+    }
+    // FIXME: should we return something from this about whether it was successfully deleted?
 }
 
 Json Phat_Server::get_master(Json args)
