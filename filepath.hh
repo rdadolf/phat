@@ -17,6 +17,8 @@ Json parse_filepath(const char* str) {
                 ret.push_back(tmp->c_str());
                 delete tmp;
                 tmp = new String();
+            } else {
+                ret.push_back("/");
             }
         } else if (*str =='\\' && *(str + 1) == ' ') {
             *tmp += ' ';
@@ -30,6 +32,17 @@ Json parse_filepath(const char* str) {
         ret.push_back(tmp->c_str());
     
     return ret;
+}
+
+const char* join_filepath(Json path) {
+    String str;
+    for (int i = 0; i < path.size(); ++i) {
+        assert(path[i].is_s());
+        str += path[i].as_s();
+        if (i != 0)
+            str += "/";
+    }
+    return str.c_str();
 }
 
 #endif // _FILE_PATH_HH_

@@ -14,11 +14,51 @@ Path strings are UNIX-style, `/`-separated directories.
 
 Filetype is either `file` or `dir`.
 
+*Will likely need to edit this to deal with locks and whether a file is open or not...*
+
 #### Sequencer:
 **NYI**
 
 #### Locktype:
 **NYI**
+
+#### Filesystem:
+`{
+    String name: 
+        array(
+            Metadata,
+            Contents)
+}`
+
+<pre>Contents := 
+    | file is `dir`: filesystem 
+    | file is `file`: byte stream
+</pre>
+
+**Examples:**
+
+Empty root: <pre>
+Filesystem root = {
+    "/": array(
+        array("/",DIR),
+        {}
+    )
+}</pre>
+
+Root with a file in it:
+<pre>
+Filesystem files = {
+    "/": array(
+        array("/",DIR),
+        {
+            "hw.txt": array(
+                array("hw.txt",FILE),
+                "Hello, World!"
+            )
+        }
+    )
+}
+</pre>
 
 ## PhatRPC
 

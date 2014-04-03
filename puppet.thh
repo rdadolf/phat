@@ -41,6 +41,13 @@ public:
   // Client operations
   tamed void send_getroot(String lhs, tamer::event<> ev);
   tamed void send_open(String lhs, String root, String subpath, tamer::event<> ev);
+  tamed void send_mkfile(String lhs, String path, String data, tamer::event<> ev);
+  tamed void send_mkdir(String lhs, String path, tamer::event<> ev);
+  tamed void send_getcontents(String lhs, String path, tamer::event<> ev);
+  tamed void send_putcontents(String lhs, String path, String data, tamer::event<> ev);
+  tamed void send_readdir(String lhs, String path, tamer::event<> ev);
+  tamed void send_stat(String lhs, String path, tamer::event<> ev);
+  tamed void send_remove(String lhs, String path, tamer::event<> ev);
   // FIXME: the rest...
 };
 
@@ -174,48 +181,90 @@ tamed void Puppet::send_open(String lhs, String root, String subpath, tamer::eve
   ev();
 }
 
-#if 0
-int Puppet::send_mkfile(String lhs, String root, String subpath, String data)
-{
-  #if DEBUG
-  printf("Sending mkfile\n");
-  #endif
-  return 0;
-}
+tamed void Puppet::send_mkfile(String lhs, String path, String data, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("mkfile"),Json::array(path,data))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: mkfile";
 
-int Puppet::send_mkdir(String lhs, String root, String subpath)
-{
-  #if DEBUG
-  printf("Sending mkdir\n");
-  #endif
-  return 0;
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
 }
+tamed void Puppet::send_mkdir(String lhs, String path, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("mkdir"),Json::array(path))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: mkdir";
 
-int Puppet::send_getcontents(String lhs, String handle)
-{
-  #if DEBUG
-  printf("Sending getcontents\n");
-  #endif
-  return 0;
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
 }
+tamed void Puppet::send_getcontents(String lhs, String path, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("getcontents"),Json::array(path))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: getcontents";
 
-int Puppet::send_putcontents(String lhs, String handle, String data)
-{
-  #if DEBUG
-  printf("Sending putcontents\n");
-  #endif
-  return 0;
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
 }
+tamed void Puppet::send_putcontents(String lhs, String path,String data, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("putcontents"),Json::array(path,data))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: putcontents";
 
-int Puppet::send_readdir(String lhs, String handle)
-{
-  #if DEBUG
-  printf("Sending readdir\n");
-  #endif
-  return 0;
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
 }
-#endif
+tamed void Puppet::send_readdir(String lhs, String path, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("readdir"),Json::array(path))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: readdir";
 
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
+}
+tamed void Puppet::send_stat(String lhs, String path, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("stat"),Json::array(path))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: stat";
+
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
+}
+tamed void Puppet::send_remove(String lhs, String path, tamer::event<> ev) {
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("remove"),Json::array(path))); // FIXME: lhs
+    RPC_Msg reply;
+  }
+  INFO() <<  "Sending puppet command: remove";
+
+  twait { mpfd_.call(request,make_event(reply.json())); }
+  INFO() << "Received: " << reply.json();
+  
+  ev();
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Puppet Server
