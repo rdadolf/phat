@@ -25,13 +25,13 @@ mkfile: clean_puppet
 DEBUG=-g -DDEBUG=1
 
 TAMERC=mprpc/tamer/compiler/tamer
-TAMERFLAGS=-n
+TAMERFLAGS=
 #TAMERFLAGS=-n -L
-CXX=g++
-CXXFLAGS=-Wall $(DEBUG) -std=gnu++0x -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
+CXX=g++ -std=c++11 -stdlib=libc++
+CXXFLAGS=-W -Wall -g -O2 $(DEBUG) -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
 LIBS=$(LIBTAMER) `$(TAMERC) -l`
-LDFLAGS= -lrt -lpthread -lm $(LIBS)
+LDFLAGS= -lpthread -lm $(LIBS)
 MPRPC_SRC=mprpc/msgpack.cc mprpc/.deps/mpfd.cc mprpc/string.cc mprpc/straccum.cc mprpc/json.cc mprpc/compiler.cc mprpc/clp.c
 MPRPC_OBJ=mprpc/msgpack.o mprpc/mpfd.o mprpc/string.o mprpc/straccum.o mprpc/json.o mprpc/compiler.o mprpc/clp.c
 MPRPC_HDR=mprpc/msgpack.hh mprpc/.deps/mpfd.hh mprpc/string.hh mprpc/straccum.hh mprpc/json.hh mprpc/compiler.hh mprpc/clp.h
@@ -58,14 +58,14 @@ puppet: puppet.o puppet.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TE
 
 paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
-	
+
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
-	$(TAMERC) $(TAMERFLAGS) $< -o $@
+	$(TAMERC) $(TAMERFLAGS) -o $@ $<
 %.cc: test/%.tcc
-	$(TAMERC) $(TAMERFLAGS) $< -o $@
+	$(TAMERC) $(TAMERFLAGS) -o $@ $<
 %.hh: %.thh
-	$(TAMERC) $(TAMERFLAGS) $< -o $@
+	$(TAMERC) $(TAMERFLAGS) -o $@ $<
 
 paxos.o: $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC) paxos.hh paxos.cc
 paxos_test.o: paxos_test.cc paxos.hh mprpc/.deps/mpfd.hh

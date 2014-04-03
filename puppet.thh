@@ -276,7 +276,7 @@ private:
   tamer::fd client_fd;
   String s;
 public:
-  Puppet_Server(int port);
+  Puppet_Server(int port=15808);
 
   // Basic operations
   tamed void run_puppet_server(int port);
@@ -302,7 +302,7 @@ public:
 
 };
 
-Puppet_Server::Puppet_Server(int port=15808)
+Puppet_Server::Puppet_Server(int port)
 {
   run_puppet_server(port);
 }
