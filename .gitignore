@@ -1,10 +1,8 @@
-phat.cc
-phat.hh
-phat
 log.txt
 *.DS_STORE
 *.o
 client_driver.cc
+client_driver
 phat_api.cc
 phat_api.hh
 phat_server.cc
@@ -15,4 +13,5 @@ puppet.hh
 scratch/ctl
 scratch/ctl.cc
 server_driver.cc
+server_driver
 test/*.hh

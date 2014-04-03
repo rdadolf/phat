@@ -25,24 +25,26 @@ private:
 public:
   Server_Puppet(int puppet_port, int phat_port) : Puppet_Server(puppet_port), phat_(phat_port) {}
 
-  void dispatch(String tag, Json args);
+  virtual void dispatch(String tag, Json args, tamer::event<> ev);
 
-  tamed void service_electme(Json args);
+  tamed void service_electme(Json args, tamer::event<> ev);
 };
 
 
-void Server_Puppet::dispatch(String tag, Json args)
+void Server_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 {
-  puppet::Puppet_Server::dispatch(tag, args);
+  puppet::Puppet_Server::dispatch(tag, args, ev);
 
   if(tag=="electme")
-    service_electme(args);
+    service_electme(args, ev);
   // No warning about unknown messages, to allow extensibility via inheritance.
 }
 
-tamed void Server_Puppet::service_electme(Json args)
+tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
 {
+  // FIXME: NYI
 
+  ev();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,6 +63,7 @@ int main(int argc, char **argv)
     }
   }
 
+  INFO() << "Server Driver up at PID " << getpid();
   Server_Puppet puppet_server(puppet_port, phat_port);
 
   tamer::loop();

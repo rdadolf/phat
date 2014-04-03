@@ -15,9 +15,9 @@
 #include <string.h> // strerror
 #include <errno.h> // errno types
 
-#define INFO() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] INFO: "
-#define WARN() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] WARN: "
-#define ERROR() std::cout << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] ERROR: "
+#define INFO() std::cerr << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] INFO: "
+#define WARN() std::cerr << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] WARN: "
+#define ERROR() std::cerr << std::endl << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] ERROR: "
 
 typedef std::string _str;
 
@@ -51,15 +51,15 @@ inline Log::~Log() {
 }
 
 inline String Now() {
-    char buffer[11];
-    time_t t;
-    time(&t);
-    tm r = {0};
-    strftime(buffer, sizeof(buffer), "%X", localtime_r(&t, &r));
+    //char buffer[11];
+    //time_t t;
+    //time(&t);
+    //tm r = {0};
+    //strftime(buffer, sizeof(buffer), "%X", localtime_r(&t, &r));
     struct timeval tv;
     gettimeofday(&tv, 0);
     char result[100] = {0};
-    std::sprintf(result, "%s.%06ld", buffer, (long)tv.tv_usec); 
+    std::sprintf(result, "%010ld.%06ld", (long)tv.tv_sec, (long)tv.tv_usec); 
     return result;
 }
 

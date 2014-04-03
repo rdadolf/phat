@@ -25,108 +25,118 @@ private:
 public:
   Client_Puppet(int puppet_port) : Puppet_Server(puppet_port) {}
 
-  void dispatch(String tag, Json args);
+  virtual void dispatch(String tag, Json args, tamer::event<> ev);
 
-  tamed void service_getroot(Json args);
-  tamed void service_open(Json args);
-  tamed void service_mkfile(Json args);
-  tamed void service_mkdir(Json args);
-  tamed void service_getcontents(Json args);
-  tamed void service_putcontents(Json args);
-  tamed void service_readdir(Json args);
-  tamed void service_stat(Json args);
-  tamed void service_flock(Json args);
-  tamed void service_unlock(Json args);
-  tamed void service_remove(Json args);
+  tamed void service_getroot(Json args, tamer::event<> ev);
+  tamed void service_open(Json args, tamer::event<> ev);
+  tamed void service_mkfile(Json args, tamer::event<> ev);
+  tamed void service_mkdir(Json args, tamer::event<> ev);
+  tamed void service_getcontents(Json args, tamer::event<> ev);
+  tamed void service_putcontents(Json args, tamer::event<> ev);
+  tamed void service_readdir(Json args, tamer::event<> ev);
+  tamed void service_stat(Json args, tamer::event<> ev);
+  tamed void service_flock(Json args, tamer::event<> ev);
+  tamed void service_unlock(Json args, tamer::event<> ev);
+  tamed void service_remove(Json args, tamer::event<> ev);
 };
 
 
 // Called by the puppet server class's internals.
 // Extensible dispatch.
-void Client_Puppet::dispatch(String tag, Json args)
+void Client_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 {
-  puppet::Puppet_Server::dispatch(tag, args);
+  puppet::Puppet_Server::dispatch(tag, args, ev);
 
   if(tag=="getroot")
-    service_getroot(args);
+    service_getroot(args, ev);
   else if(tag=="open")
-    service_open(args);
+    service_open(args, ev);
   else if(tag=="mkfile")
-    service_mkfile(args);
+    service_mkfile(args, ev);
   else if(tag=="mkdir")
-    service_mkdir(args);
+    service_mkdir(args, ev);
   else if(tag=="getcontents")
-    service_getcontents(args);
+    service_getcontents(args, ev);
   else if(tag=="putcontents")
-    service_putcontents(args);
+    service_putcontents(args, ev);
   else if(tag=="readdir")
-    service_readdir(args);
+    service_readdir(args, ev);
   else if(tag=="stat")
-    service_stat(args);
+    service_stat(args, ev);
   else if(tag=="flock")
-    service_flock(args);
+    service_flock(args, ev);
   else if(tag=="unlock")
-    service_unlock(args);
+    service_unlock(args, ev);
   else if(tag=="remove")
-    service_remove(args);
+    service_remove(args, ev);
+
+  INFO() << "Client dispatch finished";
   // No warning about unknown messages, to allow extensibility via inheritance.
 }
 
-tamed void Client_Puppet::service_getroot(Json args)
+tamed void Client_Puppet::service_getroot(Json args, tamer::event<> ev )
 {
-  Handle h;
-  h = phat_.getroot();
+  tvars {
+    Handle h;
+  }
+
+  INFO() << "Client servicing getroot request";
+  INFO() << "HERE";
+
+  twait{ phat_.getroot(make_event(h)); }
+
   // FIXME: storage for h is specified by lhs in args, do something with it
+  ev();
 }
 
-tamed void Client_Puppet::service_open(Json args)
+tamed void Client_Puppet::service_open(Json args, tamer::event<> ev )
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_mkfile(Json args)
+tamed void Client_Puppet::service_mkfile(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_mkdir(Json args)
+tamed void Client_Puppet::service_mkdir(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_getcontents(Json args)
+tamed void Client_Puppet::service_getcontents(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_putcontents(Json args)
+tamed void Client_Puppet::service_putcontents(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_readdir(Json args)
+tamed void Client_Puppet::service_readdir(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_stat(Json args)
+tamed void Client_Puppet::service_stat(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_flock(Json args)
+tamed void Client_Puppet::service_flock(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_unlock(Json args)
+tamed void Client_Puppet::service_unlock(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
-tamed void Client_Puppet::service_remove(Json args)
+tamed void Client_Puppet::service_remove(Json args, tamer::event<> ev)
 {
-
+  ev();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +155,7 @@ int main(int argc, char **argv)
     }
   }
 
+  INFO() << "Client Driver up at PID " << getpid();
   Client_Puppet puppet_server(puppet_port);
 
   tamer::loop();

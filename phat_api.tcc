@@ -36,6 +36,7 @@ tamed void Phat_Interface::init(const Server_t contact_point)
   // Now ask for replica list
   twait { get_replica_list(make_event()); } // FIXME: NYI
 
+  INFO() << "init finished";
 }
 
 tamed void Phat_Interface::get_master(tamer::event<> ev)
@@ -87,7 +88,7 @@ tamed void Phat_Interface::get_master(tamer::event<> ev)
 
   INFO() << "Master identified";
 
-  ev(); // FIXME
+  ev();
 }
 
 tamed void Phat_Interface::get_replica_list(tamer::event<> ev)
@@ -102,61 +103,84 @@ tamed void wait_for_notifications(tamer::event<Notification> ev)
   // FIXME Handle notifications
 }
 
-Handle Phat_Interface::getroot()
+tamed void Phat_Interface::getroot( tamer::event<Handle> ev )
 {
-  return Handle();
+  tvars {
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) getroot called";
+
+  request = RPC_Msg(Json::array(String("getroot")));
+  twait { master_fd_.call(request, make_event(reply.json())); }
+  if( !master_fd_ ) {
+    WARN() << "Master connection lost";
+    // FIXME: implement failover
+    exit(-1);
+  }
+  // FIXME: validate
+  if( reply.content()[0]=="ACK" ) {
+    retval = reply.content()[1];
+  } else {
+    ERROR() << "Getroot failed " << reply.json();
+    // Don't exit. Let's see what happens.
+    // FIXME: Is this the right behavior?
+  }
+
+  INFO() << "(API) getroot returned " << retval;
+  ev(retval);
 }
 
-Handle Phat_Interface::open(Handle root, const std::string subpath)
+tamed void Phat_Interface::open(Handle root, const String subpath, tamer::event<Handle> ev)
 {
-
-  return Handle();
+  ev(Handle()); // FIXME: NYI
 }
 
-Handle Phat_Interface::mkfile(Handle root, const std::string subpath, const char *data)
+tamed void Phat_Interface::mkfile(Handle root, const String subpath, const char *data, tamer::event<Handle> ev)
 {
 
-  return Handle();
+  ev(Handle()); // FIXME: NYI
 }
 
-Handle Phat_Interface::mkdir(Handle root, const std::string subpath)
+tamed void Phat_Interface::mkdir(Handle root, const String subpath, tamer::event<Handle> ev)
 {
 
-  return Handle();
+  ev(Handle()); // FIXME: NYI
 }
 
-const char *Phat_Interface::getcontents(Handle h)
+tamed void Phat_Interface::getcontents(Handle h, tamer::event<const char *> ev)
 {
-  return NULL;
+  ev((const char *)NULL); // FIXME: NYI
 }
 
-void Phat_Interface::putcontents(Handle h, const char *data)
+tamed void Phat_Interface::putcontents(Handle h, const char *data, tamer::event<> ev)
 {
-  return;
+  ev(); // FIXME: NYI
 }
 
-std::string Phat_Interface::readdir(Handle h)
+tamed void Phat_Interface::readdir(Handle h, tamer::event<String> ev)
 {
-  return "";
+  ev(String("")); // FIXME: NYI
 }
 
-Metadata Phat_Interface::stat(Handle f)
+tamed void Phat_Interface::stat(Handle f, tamer::event<Metadata> ev)
 {
-  return Metadata();
+  ev(Metadata()); // FIXME: NYI
 }
 
-Sequencer Phat_Interface::flock(Handle f, Locktype lt)
+tamed void Phat_Interface::flock(Handle f, Locktype lt, tamer::event<Sequencer> ev)
 {
-  return Sequencer();
+  ev(Sequencer()); // FIXME: NYI
 }
 
-Sequencer Phat_Interface::funlock(Handle f)
+tamed void Phat_Interface::funlock(Handle f, tamer::event<Sequencer> ev)
 {
-  return Sequencer();
+  ev(Sequencer()); // FIXME: NYI
 }
 
-void Phat_Interface::remove(Handle f)
+tamed void Phat_Interface::remove(Handle f, tamer::event<> ev)
 {
-  return;
+  ev(); // FIXME: NYI
 }
 
