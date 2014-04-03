@@ -27,6 +27,7 @@ Phat_Server::Phat_Server(int port)
 void Phat_Server::run_master_server()
 {
   INFO() << "Running phat master server";
+  i_am_master_ = true;
   handle_new_connections(listen_port_);
 }
 
@@ -103,6 +104,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     }
     INFO() << "Writing reply: " << reply.json();
     mpfd.write(reply);
+    INFO() << "Reply written.";
   }
 }
 
@@ -110,7 +112,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
 
 Json Phat_Server::getroot(Json args)
 {
-  return Json::array(String("/"));
+  return Json::array(String("ACK"), String("/"));
 }
 
 Json* Phat_Server::traverse_files(Json& root, Json path) {

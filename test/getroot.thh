@@ -19,4 +19,13 @@ tamed void run()
   twait {
     tamer::at_delay(5, make_event());
   }
+
+  twait {
+    A.send_die(make_event());
+    B.send_die(make_event());
+  }
+
+  twait {
+    tamer::at_delay(2, make_event());
+  }
 }

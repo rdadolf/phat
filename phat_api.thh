@@ -35,17 +35,17 @@ public:
 
   tamed void wait_for_notifications(tamer::event<Notification> ev);
 
-  Handle getroot();
-  Handle open(Handle root, const std::string subpath);
-  Handle mkfile(Handle root, const std::string subpath, const char *data);
-  Handle mkdir(Handle root, const std::string subpath);
-  const char *getcontents(Handle h);
-  void putcontents(Handle h, const char *data);
-  std::string readdir(Handle h);
-  Metadata stat(Handle f);
-  Sequencer flock(Handle f, Locktype lt);
-  Sequencer funlock(Handle f);
-  void remove(Handle f);
+  tamed void getroot(tamer::event<Handle> ev);
+  tamed void open(Handle root, const String subpath, tamer::event<Handle> ev);
+  tamed void mkfile(Handle root, const String subpath, const char *data, tamer::event<Handle> ev);
+  tamed void mkdir(Handle root, const String subpath, tamer::event<Handle> ev);
+  tamed void getcontents(Handle h, tamer::event<const char *> ev);
+  tamed void putcontents(Handle h, const char *data, tamer::event<> ev);
+  tamed void readdir(Handle h, tamer::event<String> ev);
+  tamed void stat(Handle f, tamer::event<Metadata> ev);
+  tamed void flock(Handle f, Locktype lt, tamer::event<Sequencer> ev);
+  tamed void funlock(Handle f, tamer::event<Sequencer> ev);
+  tamed void remove(Handle f, tamer::event<> ev);
 };
 
 } // namespace phat

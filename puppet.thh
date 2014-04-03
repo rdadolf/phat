@@ -57,7 +57,6 @@ public:
 Puppet::Puppet()
 {
   child_process_ = 0;
-  INFO() << "Puppet created.";
 }
 
 Puppet::~Puppet()
@@ -89,7 +88,6 @@ tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
     tamer::fd cfd;
     msgpack_fd mpfd;
   }
-  INFO() << "Looking up " << hostname << ":" << port;
 
   if( !get_ip_address( hostname.c_str(), hostip ) ) {
     ERROR() << "Can't find " << hostname << ": " << strerror(errno);
@@ -164,6 +162,10 @@ tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
   INFO() << "Sending puppet command: getroot";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
+  if( !mpfd_ ) {
+    WARN() << "Puppet client hung up unexpectedly";
+    ev();
+  }
   INFO() << "Received: " << reply.json();
 
   // FIXME: validate
@@ -272,34 +274,21 @@ tamed void Puppet::send_remove(String lhs, String path, tamer::event<> ev) {
 class Puppet_Server
 {
 private:
-  tamer::fd listen_fd;
-  tamer::fd client_fd;
-  String s;
+  tamer::fd listen_fd_;
+  tamer::fd client_fd_;
+  msgpack_fd client_mpfd_;
 public:
   Puppet_Server(int port=15808);
 
   // Basic operations
   tamed void run_puppet_server(int port);
   tamed void read_and_dispatch();
-  void dispatch(String tag, Json args); // called from above, but extensible.
+  virtual void dispatch(String tag, Json args, tamer::event<> ev); // called from above, but extensible.
 
   // Remote operations
-  tamed void service_print(Json args);
-  tamed void service_die(Json args);
-  tamed void service_sleep(Json args);
-  //int service_print(String name);
-  //int service_die();
-  //int service_sleep(int seconds);
-
-  // Phat Client operations
-  //int service_getroot(String lhs);
-  //int service_open(String lhs, String root, String subpath);
-  //int service_mkfile(String lhs, String root, String subpath, String data);
-  //int service_mkdir(String lhs, String root, String subpath);
-  //int service_getcontents(String lhs, String handle);
-  //int service_putcontents(String lhs, String handle, String data);
-  //int service_readdir(String lhs, String handle);
-
+  tamed void service_print(Json args, tamer::event<> ev);
+  tamed void service_die(Json args, tamer::event<> ev);
+  tamed void service_sleep(Json args, tamer::event<> ev);
 };
 
 Puppet_Server::Puppet_Server(int port)
@@ -309,17 +298,22 @@ Puppet_Server::Puppet_Server(int port)
 
 tamed void Puppet_Server::run_puppet_server(int port)
 {
-  listen_fd = tamer::tcp_listen(port);
-  if( !listen_fd ) {
-    ERROR() << "Puppet failed to listen: " << strerror(-listen_fd.error());
+  tvars { 
+    tamer::fd cfd;
+  }
+  listen_fd_ = tamer::tcp_listen(port);
+  if( !listen_fd_ ) {
+    ERROR() << "Puppet failed to listen: " << strerror(-listen_fd_.error());
     exit(-1);
   }
   INFO() << "Puppet listening on port " << port;
 
-  while(listen_fd) {
+  while(listen_fd_) {
     twait {
-      listen_fd.accept(make_event(client_fd));
+      listen_fd_.accept(make_event(cfd));
     }
+    INFO() << "Puppet received connection event";
+    client_mpfd_.initialize(cfd);
     read_and_dispatch();
   }
 }
@@ -327,18 +321,17 @@ tamed void Puppet_Server::run_puppet_server(int port)
 tamed void Puppet_Server::read_and_dispatch()
 {
   tvars {
-    msgpack_fd mpfd;
     RPC_Msg request, reply;
     String tag;
   }
 
-  mpfd.initialize(client_fd);
-  INFO() << "Puppet received connection";
-
-  while(client_fd) {
-    twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    if(!mpfd)
+  while(client_mpfd_) {
+    twait{ client_mpfd_.read_request(tamer::make_event(request.json())); }
+    if( !client_mpfd_ ) {
+      INFO() << "Client connection closed";
       break;
+    }
+    INFO() << "Puppet received RPC Msg: " << request.json();
     if(request.validate() ) {
       reply = RPC_Msg(Json::array(String("ACK")),request);
     } else {
@@ -350,39 +343,47 @@ tamed void Puppet_Server::read_and_dispatch()
     // action has been taken. This is because some of the operations
     // do not return or block. We want to be able to make progress
     // in the puppet server. There is probably a better way to do this.
-    mpfd.write(reply);
+    INFO() << "Puppet server sending reply";
+    client_mpfd_.write(reply);
     tag = request.content()[0].as_s();
-    dispatch(tag,request.content());
+    INFO() << "Dispatching: " << tag;
+    twait { dispatch(tag, request.content(), make_event()); }
   }
-  client_fd.close();
+  //client_mpfd_.close(); // FIXME: Do I need this? This loop will only break when the connection has been closed on the other end.
 }
 
-void Puppet_Server::dispatch(String tag, Json args)
+void Puppet_Server::dispatch(String tag, Json args, tamer::event<> ev)
 {
-  if(tag=="print")
-      service_print(args);
-  else if(tag=="sleep")
-      service_sleep(args);
-  else if(tag=="die")
-      service_die(args);
+  if(tag=="print") {
+    service_print(args, ev);
+  } else if(tag=="sleep") {
+    service_sleep(args, ev);
+  } else if(tag=="die") {
+    service_die(args, ev);
+  }
+
+  INFO() << "Puppet dispatch finished.";
   // No warning about unknown messages, to allow extensibility via inheritance
+  // Child class will call its own dispatch after this.
 }
 
-void Puppet_Server::service_print(Json args)
+void Puppet_Server::service_print(Json args, tamer::event<> ev)
 {
   INFO() << "Puppet printing";
 
   std::cout << args[1] << "\n";
+
+  ev();
 }
 
-void Puppet_Server::service_die(Json args)
+void Puppet_Server::service_die(Json args, tamer::event<> ev)
 {
   INFO() << "Puppet dying";
 
-  exit(0);
+  exit(0); // Everything stops. Do not pass Go, do not collect $200.
 }
 
-tamed void Puppet_Server::service_sleep(Json args)
+tamed void Puppet_Server::service_sleep(Json args, tamer::event<> ev)
 {
   tvars {
     int i;
@@ -395,6 +396,8 @@ tamed void Puppet_Server::service_sleep(Json args)
   INFO() << "Puppet sleeping.";
 
   twait { tamer::at_delay(i,make_event()); }
+
+  ev();
 }
 
 } // namespace puppet
