@@ -1,5 +1,25 @@
 tamed void run() {
     tvars {
-        puppet::Puppet P;
+        puppet::Puppet A;
+        paxos::Paxos_Master pm;
+        std::vector<int> paxi;
+        std::vector<int>::size_type i;
     }
+    for (i = 0; i < 3; ++i)
+        paxi.push_back(18010 + i);
+    
+    pm = paxos::Paxos_Master(18000,paxi);
+    
+    twait { pm.listen(make_event()); }
+    // A.spawn("./server_driver -P 15807 -p 15810 -x 15811");
+    // sleep(1);
+    // twait { A.connect("localhost",15807,make_event()); }
+
+    // twait {
+    //   A.send_mkfile("val", String("/test.txt"), String("test"),make_event());
+    // }
+
+    // twait {
+    //   tamer::at_delay(5, make_event());
+    // }
 }

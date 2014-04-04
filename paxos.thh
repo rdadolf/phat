@@ -15,6 +15,8 @@
 #define PREPARED        4   // prepared message
 #define ACCEPTED        5   // accepted message
 
+namespace paxos {
+
 class Paxos_Proposer{
 public:
     typedef Paxos_Proposer ppropose_type;
@@ -95,5 +97,26 @@ public:
     tamed void accept(msgpack_fd& mpfd, Json& req, int n, Json v);
     tamed void decided(msgpack_fd& mpfd, Json& req,Json v);
 };
+
+// class for getting the ports of the other members in the quorum
+class Paxos_Master {
+private: 
+    int _port;
+    Json _ports;
+public:
+    Paxos_Master() : _port(18000) {
+    }
+    Paxos_Master(int port, std::vector<int> ports) : 
+        _port(port){
+
+        for (std::vector<int>::size_type i = 0; i < ports.size(); ++i)
+            _ports.push_back(ports[i]);
+    }
+
+    tamed void listen(tamer::event<> ev);
+    tamed void handle_request(tamer::fd cfd);
+};
+
+} // namespace paxos
 
 #endif

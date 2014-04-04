@@ -15,14 +15,20 @@ using namespace phat;
 Phat_Server::Phat_Server()
 {
   listen_port_ = 15810;
-  fs_init();
+  paxos_port_ = 15811;
   run_master_server();
 }
 
 Phat_Server::Phat_Server(int port)
 {
   listen_port_ = port;
-  fs_init();
+  paxos_port_ = 15811;
+  run_master_server();
+}
+
+Phat_Server::Phat_Server(int port, int paxos) {
+  listen_port_ = port;
+  paxos_port_ = paxos;
   run_master_server();
 }
 
@@ -35,6 +41,7 @@ void Phat_Server::run_master_server()
 {
   INFO() << "Running phat master server" << std::endl;
   i_am_master_ = true;
+  fs_init();
   handle_new_connections(listen_port_);
 }
 

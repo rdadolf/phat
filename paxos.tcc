@@ -1,9 +1,12 @@
 // -*- mode: c++ -*-
 #include "mpfd.hh"
-#include "paxos.hh"
+#include "rpc_msg.hh"
 #include <netdb.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include "paxos.hh"
+using namespace paxos;
 
 tamed void Paxos_Proposer::proposer_init (tamer::event<> done) {
     tvars {
@@ -254,4 +257,36 @@ tamed void Paxos_Acceptor::decided(msgpack_fd& mpfd, Json& req,Json v) {
     v_a = v;
     prepare_message(req,res,0);
     mpfd.write(res);
+}
+
+tamed void Paxos_Master::listen(tamer::event<> ev) {
+    tvars {
+        tamer::fd sfd;
+        tamer::fd cfd;
+    }
+    sfd = tamer::tcp_listen(_port);
+    if (sfd)
+        std::cerr << "listening on port " << _port << std::endl;
+    else
+        std::cerr << "listen: " << strerror(-sfd.error()) << std::endl;
+    while (sfd) {
+        twait { sfd.accept(make_event(cfd)); }
+        handle_request(cfd);
+    }
+    ev();
+}
+
+tamed void Paxos_Master::handle_request(tamer::fd cfd) {
+    tvars {
+        msgpack_fd mpfd(cfd);
+        RPC_Msg req,res;
+    }
+    while (cfd) {
+        twait { mpfd.read_request(make_event(req.json())); }
+        if (!req.content()[0].is_s() || req.content()[0].as_s() != "ports")
+            res = RPC_Msg(Json::array("NACK"),req);
+        else
+            res = RPC_Msg(Json::array("ACK",_ports),req);
+        mpfd.write(res);
+    }
 }

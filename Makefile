@@ -41,7 +41,7 @@ MPRPC_HDR=mprpc/msgpack.hh mprpc/.deps/mpfd.hh mprpc/string.hh mprpc/straccum.hh
 UTIL_OBJ=network.o
 
 CLIENT_HDR=phat_api.hh puppet.hh rpc_msg.hh log.hh network.hh
-SERVER_HDR=phat_server.hh puppet.hh rpc_msg.hh log.hh network.hh
+SERVER_HDR=phat_server.hh puppet.hh paxos.hh rpc_msg.hh log.hh network.hh
 
 # Build rules
 client_driver.o: client_driver.cc $(CLIENT_HDR)
@@ -51,11 +51,12 @@ client_driver: client_driver.o phat_api.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) 
 
 server_driver.o: server_driver.cc $(SERVER_HDR)
 phat_server.o: phat_server.cc $(SERVER_HDR)
-server_driver: server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+paxos.o: paxos.cc $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
+server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
 	$(CXX) server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
 
 TEST_SCRIPT ?= test/simple.hh
-puppet: puppet.o puppet.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
+puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
 	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
 
 # Suffix rules for files that need TAMING
@@ -66,12 +67,11 @@ puppet: puppet.o puppet.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TE
 %.hh: %.thh
 	$(TAMERC) $(TAMERFLAGS) -o $@ $<
 
-paxos.o: $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC) paxos.hh paxos.cc
-paxos_test.o: paxos_test.cc paxos.hh mprpc/.deps/mpfd.hh
 ex/log_test.o: ex/log_test.cc
 
 # Cleanup
 clean:
 	rm -f client_driver server_driver puppet paxos_test *.o
+	rm -rf *.dSYM
 	rm -f $(CPP_TEMPS)
 	rm -f $(HPP_TEMPS)
