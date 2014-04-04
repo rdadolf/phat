@@ -29,7 +29,7 @@ DEBUG=-g -DDEBUG=1
 TAMERC=mprpc/tamer/compiler/tamer
 TAMERFLAGS=
 #TAMERFLAGS=-n -L
-CXX=g++ -std=c++11 -stdlib=libc++
+CXX=g++ -std=gnu++11 -stdlib=libc++
 CXXFLAGS=-W -Wall -g -O2 $(DEBUG) -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
 LIBS=$(LIBTAMER) `$(TAMERC) -l`
@@ -57,7 +57,7 @@ server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(
 
 TEST_SCRIPT ?= test/simple.hh
 puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
-	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.o paxos.o $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
 
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
