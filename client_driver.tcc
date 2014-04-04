@@ -70,7 +70,7 @@ void Client_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
   else if(tag=="remove")
     service_remove(args, ev);
 
-  INFO() << "Client dispatch finished";
+  INFO() << "Client dispatch finished" << std::endl;
   // No warning about unknown messages, to allow extensibility via inheritance.
 }
 
@@ -80,8 +80,8 @@ tamed void Client_Puppet::service_getroot(Json args, tamer::event<> ev )
     Handle h;
   }
 
-  INFO() << "Client servicing getroot request";
-  INFO() << "HERE";
+  INFO() << "Client servicing getroot request" << std::endl;
+  INFO() << "HERE" << std::endl;
 
   twait{ phat_.getroot(make_event(h)); }
 
@@ -99,7 +99,7 @@ tamed void Client_Puppet::service_mkfile(Json args, tamer::event<> ev)
   tvars {
     Handle h;
   }
-  INFO() << "Client servicing getroot request";
+  INFO() << "Client servicing getroot request" << std::endl;
 
   twait{ phat_.mkfile(args,make_event(h)); }
   ev();
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     }
   }
 
-  INFO() << "Client Driver up at PID " << getpid();
+  INFO() << "Client Driver up at PID " << getpid() << std::endl;
   Client_Puppet puppet_server(puppet_port);
 
   tamer::loop();

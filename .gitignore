@@ -15,3 +15,4 @@ scratch/ctl.cc
 server_driver.cc
 server_driver
 test/*.hh
+*.dSYM

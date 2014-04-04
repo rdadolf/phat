@@ -32,6 +32,7 @@ public:
   Json get_replica_list(Json args);
 
   // Service routines
+  void fs_init();
   Json getroot(Json args);
   Json open(const char* subpath);
   Json mkfile(Json args);

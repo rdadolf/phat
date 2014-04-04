@@ -9,7 +9,7 @@
 #ifndef TEST_SCRIPT
 tamed void run()
 {
-  ERROR() << "No test script specified. Exiting.";
+  ERROR() << "No test script specified. Exiting." << std::endl;
   exit(-1);
 }
 #else

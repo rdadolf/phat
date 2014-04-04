@@ -63,7 +63,7 @@ int main(int argc, char **argv)
     }
   }
 
-  INFO() << "Server Driver up at PID " << getpid();
+  INFO() << "Server Driver up at PID " << getpid() << std::endl;
   Server_Puppet puppet_server(puppet_port, phat_port);
 
   tamer::loop();

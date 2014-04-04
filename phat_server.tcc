@@ -15,18 +15,25 @@ using namespace phat;
 Phat_Server::Phat_Server()
 {
   listen_port_ = 15810;
+  fs_init();
   run_master_server();
 }
 
 Phat_Server::Phat_Server(int port)
 {
   listen_port_ = port;
+  fs_init();
   run_master_server();
+}
+
+void Phat_Server::fs_init() {
+  root = Json();
+  root.set("/",Json::array(Json::array("/",DIR),Json::make_object()));
 }
 
 void Phat_Server::run_master_server()
 {
-  INFO() << "Running phat master server";
+  INFO() << "Running phat master server" << std::endl;
   i_am_master_ = true;
   handle_new_connections(listen_port_);
 }
@@ -51,7 +58,7 @@ tamed void Phat_Server::handle_new_connections(int port)
     exit(-1);
   }
 
-  INFO() << "Phat server listening on " << port;
+  INFO() << "Phat server listening on " << port << std::endl;
 
   while(listen_fd) {
     twait {
@@ -71,7 +78,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
   mpfd.initialize(client_fd);
   while(mpfd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    INFO() << "Received RPC: " << request.json();
+    INFO() << "Received RPC: " << request.json() << std::endl;
     if(!mpfd)
       break;
     if( request.validate() ) {
@@ -102,9 +109,9 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     } else {
       reply = RPC_Msg( Json::array(String("NACK")), request );
     }
-    INFO() << "Writing reply: " << reply.json();
+    INFO() << "Writing reply: " << reply.json() << std::endl;
     mpfd.write(reply);
-    INFO() << "Reply written.";
+    INFO() << "Reply written." << std::endl;
   }
 }
 
@@ -141,17 +148,15 @@ Json Phat_Server::open(const char* subpath) {
 Json Phat_Server::mkfile(Json args) {
     if (args.size() != 2 || !args[0].is_s() || !args[1].is_s())
       return Json::array("NACK");
-
-    const char* subpath = args[1].as_s().c_str();
-    const char* data = args[2].as_s().c_str();
+    const char* subpath = args[0].as_s().c_str();
+    const char* data = args[1].as_s().c_str();
     Json path = parse_filepath(subpath);
     String name = path.back().as_s();
     path.pop_back();
     Json* ret = traverse_files(root,path);
     if (ret)
         ret->set(name,Json::array(Json::array(name,FILE),data));
-    INFO() << root;
-    return root;
+    return Json::array("ACK",root);
 }
 
 Json Phat_Server::mkdir(Json args) {
@@ -164,7 +169,7 @@ Json Phat_Server::mkdir(Json args) {
     Json* ret = traverse_files(root,path);
     if(ret)
         ret->set(name,Json::array(Json::array(name,DIR),Json::make_object()));
-    return root;
+    return Json::array("ACK",root);
 }
 
 Json Phat_Server::getcontents(Json args) {
@@ -181,7 +186,7 @@ Json Phat_Server::getcontents(Json args) {
         assert((*ret)[name][1].is_s());
         data = (*ret)[name][1].as_s().c_str();
     }
-    return Json::array(data);
+    return Json::array("ACK",data);
 }
 
 Json Phat_Server::putcontents(Json args) {
@@ -197,7 +202,7 @@ Json Phat_Server::putcontents(Json args) {
         assert((*ret)[name][0][1].is_i() && (*ret)[name][0][1].as_i() == FILE);
         (*ret)[name][1] = data;
     }
-    return root;
+    return Json::array("ACK",root);
 }
 
 Json Phat_Server::readdir(Json args) {
@@ -216,7 +221,7 @@ Json Phat_Server::readdir(Json args) {
             it++;
         }
     }
-    return ret;
+    return Json::array("ACK",ret);
 }
 
 Json Phat_Server::stat(Json args) {
@@ -228,7 +233,7 @@ Json Phat_Server::stat(Json args) {
     path.pop_back();
     Json* ret = traverse_files(root,path);
     if (ret && (*ret)[name]) {
-        return (*ret)[name][0];
+        return Json::array("ACK",(*ret)[name][0]);
     }
     return Json::null;
 }
@@ -256,7 +261,7 @@ Json Phat_Server::remove(Json args) {
 
 Json Phat_Server::get_master(Json args)
 {
-  INFO() << "get_master service routine called";
+  INFO() << "get_master service routine called" << std::endl;
   if( i_am_master_ ) {
     return Json::array(String("ACK"));
   } else {
