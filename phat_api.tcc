@@ -137,10 +137,26 @@ tamed void Phat_Interface::open(Handle root, const String subpath, tamer::event<
   ev(Handle()); // FIXME: NYI
 }
 
-tamed void Phat_Interface::mkfile(Handle root, const String subpath, const char *data, tamer::event<Handle> ev)
+tamed void Phat_Interface::mkfile(Json args, tamer::event<Handle> ev)
 {
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
 
-  ev(Handle()); // FIXME: NYI
+  INFO() << "(API) mkfile called " << args;
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "Mkfile failed " << reply.json();
+  INFO() << "(API) mkfile returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
 tamed void Phat_Interface::mkdir(Handle root, const String subpath, tamer::event<Handle> ev)

@@ -1,0 +1,5 @@
+tamed void run() {
+    tvars {
+        puppet::Puppet P;
+    }
+}

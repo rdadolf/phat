@@ -141,6 +141,7 @@ Json Phat_Server::open(const char* subpath) {
 Json Phat_Server::mkfile(Json args) {
     if (args.size() != 2 || !args[0].is_s() || !args[1].is_s())
       return Json::array("NACK");
+
     const char* subpath = args[1].as_s().c_str();
     const char* data = args[2].as_s().c_str();
     Json path = parse_filepath(subpath);

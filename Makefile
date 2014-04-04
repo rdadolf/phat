@@ -19,6 +19,8 @@ getroot: clean_puppet
 	make TEST_SCRIPT=test/getroot.hh
 mkfile: clean_puppet
 	make TEST_SCRIPT=test/mkfile.hh
+paxos_test: clean_puppet
+	make TEST_SCRIPT=test/paxos_test.hh
 
 
 # All manner of FLAGS
@@ -55,9 +57,6 @@ server_driver: server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SR
 TEST_SCRIPT ?= test/simple.hh
 puppet: puppet.o puppet.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
 	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
-
-paxos_test: paxos_test.o paxos.o $(MPRPC_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 # Suffix rules for files that need TAMING
 %.cc: %.tcc

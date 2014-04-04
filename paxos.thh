@@ -37,7 +37,7 @@ public:
         mpfd(ps.size()),
         res(ps.size()),
         f(f_i), n_p(0), v_o(), v_c(),
-        log("Proposer",18029) {
+        log("Proposer",getpid()) {
     }
     ~Paxos_Proposer() {
         for (std::vector<int>::size_type i = 0; i < ports.size() ; ++i)
@@ -74,13 +74,13 @@ public:
         port(18029),
         v_a (Json::make_array()), 
         n_l(0),n_a(0),
-        log("Acceptor",18029) {
+        log("Acceptor",getpid()) {
     }
     Paxos_Acceptor(int p) : 
         port(p),
         v_a (Json::make_array()), 
         n_l(0),n_a(0),
-        log("Acceptor",p) {
+        log("Acceptor",getpid()) {
     }
 
     void prepare_message(Json& req, Json& res, int type) {
