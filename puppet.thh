@@ -304,7 +304,7 @@ tamed void Puppet_Server::run_puppet_server(int port)
   }
   listen_fd_ = tamer::tcp_listen(port);
   if( !listen_fd_ ) {
-    ERROR() << "Puppet failed to listen: " << strerror(-listen_fd_.error()) << std::endl;
+    ERROR() << "Puppet failed to listen on " << port << ": " << strerror(-listen_fd_.error()) << std::endl;
     exit(-1);
   }
   INFO() << "Puppet listening on port " << port << std::endl;

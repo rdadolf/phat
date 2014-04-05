@@ -6,13 +6,14 @@ tamed void run() {
         std::vector<int>::size_type i;
     }
     for (i = 0; i < 3; ++i)
-        paxi.push_back(18010 + i);
+        paxi.push_back(15900 + i);
     
-    pm = paxos::Paxos_Master(18000,paxi);
+    pm = paxos::Paxos_Master(15800,paxi);
     
-    twait { pm.listen(make_event()); }
-    // A.spawn("./server_driver -P 15807 -p 15810 -x 15811");
-    // sleep(1);
+    pm.listen();
+    sleep(1);
+    A.spawn("./server_driver -p 15810 -x 15811");
+    twait {tamer::at_delay(10,make_event()); }
     // twait { A.connect("localhost",15807,make_event()); }
 
     // twait {

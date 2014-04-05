@@ -259,7 +259,7 @@ tamed void Paxos_Acceptor::decided(msgpack_fd& mpfd, Json& req,Json v) {
     mpfd.write(res);
 }
 
-tamed void Paxos_Master::listen(tamer::event<> ev) {
+tamed void Paxos_Master::listen() {
     tvars {
         tamer::fd sfd;
         tamer::fd cfd;
@@ -273,7 +273,6 @@ tamed void Paxos_Master::listen(tamer::event<> ev) {
         twait { sfd.accept(make_event(cfd)); }
         handle_request(cfd);
     }
-    ev();
 }
 
 tamed void Paxos_Master::handle_request(tamer::fd cfd) {
@@ -287,6 +286,7 @@ tamed void Paxos_Master::handle_request(tamer::fd cfd) {
             res = RPC_Msg(Json::array("NACK"),req);
         else
             res = RPC_Msg(Json::array("ACK",_ports),req);
+        INFO() << "handle paxos group request: " << res.content() << std::endl;
         mpfd.write(res);
     }
 }

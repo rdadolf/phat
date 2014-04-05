@@ -14,6 +14,9 @@ private:
   typedef enum { FILE=1, DIR } Filetype_t;
   int listen_port_;
   int paxos_port_;
+  int paxos_master_;
+  msgpack_fd paxm_mpfd_;
+  std::vector<int> paxi_;
 
   Json fs_image_; // ALL DATA EVER.
   Json root;
@@ -21,14 +24,16 @@ private:
 public:
   Phat_Server();
   Phat_Server(int port);
-  Phat_Server(int port, int paxos);
+  Phat_Server(int port, int paxos, int pm);
 
-  void run_master_server();
+  tamed void run_master_server();
+  tamed void get_paxos_group(tamer::event<> ev);
   void run_replica_server();
 
   // Utility functions
   tamed void handle_new_connections(int port);
   tamed void read_and_dispatch(tamer::fd client);
+  tamed void connect(String hostname, int port,tamer::event<msgpack_fd> ev);
 
   // Internal service routines
   Json get_master(Json args);

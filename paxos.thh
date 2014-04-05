@@ -112,8 +112,7 @@ public:
         for (std::vector<int>::size_type i = 0; i < ports.size(); ++i)
             _ports.push_back(ports[i]);
     }
-
-    tamed void listen(tamer::event<> ev);
+    tamed void listen();
     tamed void handle_request(tamer::fd cfd);
 };
 

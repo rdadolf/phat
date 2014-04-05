@@ -16,6 +16,7 @@ Phat_Server::Phat_Server()
 {
   listen_port_ = 15810;
   paxos_port_ = 15811;
+  paxos_master_ = 15800;
   run_master_server();
 }
 
@@ -23,12 +24,14 @@ Phat_Server::Phat_Server(int port)
 {
   listen_port_ = port;
   paxos_port_ = 15811;
+  paxos_master_ = 15800;
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port, int paxos) {
+Phat_Server::Phat_Server(int port, int paxos, int pm) {
   listen_port_ = port;
   paxos_port_ = paxos;
+  paxos_master_ = pm;
   run_master_server();
 }
 
@@ -37,17 +40,56 @@ void Phat_Server::fs_init() {
   root.set("/",Json::array(Json::array("/",DIR),Json::make_object()));
 }
 
-void Phat_Server::run_master_server()
+tamed void Phat_Server::run_master_server()
 {
   INFO() << "Running phat master server" << std::endl;
   i_am_master_ = true;
   fs_init();
+  twait { get_paxos_group(make_event()); }
   handle_new_connections(listen_port_);
 }
 
 void Phat_Server::run_replica_server()
 {
   ; // FIXME: NYI
+}
+
+tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
+  tvars {
+    RPC_Msg req, res;
+  }
+  INFO() << "in get_paxos" << std::endl;
+  twait { connect("localhost",paxos_master_,make_event(paxm_mpfd_)); }
+  req = RPC_Msg(Json::array("ports"));
+  INFO() << "in get_paxos2" << std::endl;
+  twait { paxm_mpfd_.call(req,make_event(res.json())); }
+  INFO() << "get paxos group: " << res.content() << std::endl;
+  ev();
+}
+
+tamed void Phat_Server::connect(String hostname, int port, tamer::event<msgpack_fd> ev)
+{
+  tvars {
+    struct in_addr hostip;
+    tamer::fd cfd;
+  }
+
+  if( !get_ip_address( hostname.c_str(), hostip ) ) {
+    ERROR() << "Can't find " << hostname << ": " << strerror(errno) << std::endl;
+    exit(-1);
+  }
+  
+  INFO() << "Connecting to " << inet_ntoa(hostip) << ":" << port << std::endl;
+
+  twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
+  if( !cfd ) {
+    ERROR() << "Couldn't connect to " << hostname << ": " << strerror(-cfd.error()) << std::endl;
+    exit(-1);
+  }
+
+  ev.result_pointer()->initialize(cfd);
+
+  ev.unblock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
