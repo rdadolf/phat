@@ -57,7 +57,7 @@ server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(
 
 TEST_SCRIPT ?= test/simple.hh
 puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
-	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.o paxos.o $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -DTEST_SCRIPT='"$(TEST_SCRIPT)"' puppet.cc paxos.o $(UTIL_OBJ) $(MPRPC_SRC) -o puppet $(LDFLAGS)
 
 # Suffix rules for files that need TAMING
 %.cc: %.tcc
