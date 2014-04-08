@@ -1,10 +1,8 @@
-// used http://www.drdobbs.com/cpp/logging-in-c/201804215 as a starting point
-
 #ifndef __LOG_H__
 #define __LOG_H__
 
-#include <sstream>
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -15,94 +13,74 @@
 #include <string.h> // strerror
 #include <errno.h> // errno types
 
-#define INFO() std::cout << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] INFO: "
-#define WARN() std::cerr << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] WARN: "
-#define ERROR() std::cerr << Now() << " [" << std::to_string(getpid()) << ":" << __FILE__ << ":" << __LINE__ << "] ERROR: "
+#define INFO() LogInstance("INFO",__FILE__,__LINE__)
+#define WARN() LogInstance("WARN",__FILE__,__LINE__)
+#define ERROR() LogInstance("ERROR",__FILE__,__LINE__)
 
-typedef std::string _str;
-
-inline String Now();
-
-class Log {
-protected:
-    std::ostream& os;
-public:
-    Log(std::ostream& strm = std::cerr): os(strm) {
-    }
-    virtual ~Log();
-
-    inline Log& operator<<(String str) {
-        Get() << str << std::endl;
-        return *this;
-    }
-    virtual std::ostream& Get();
+class LogState {
 private:
-    Log& operator=(const Log&);
+  std::ofstream logfile_;
+
+  LogState() {
+    logfile_.open("log.txt", std::ios_base::out | std::ios_base::app);
+  }
+public:
+  static LogState& get() {
+    static LogState ls;
+    return ls;
+  }
+
+  LogState &operator<< (String rhs) {
+    logfile_ << rhs;
+    logfile_.flush();
+    return *this;
+  }
 };
 
-inline std::ostream& Log::Get(){
-    os << "- " << Now();
-    os << " : ";
-    return os;
-}
-
-inline Log::~Log() {
-    os.flush();
-}
-
-inline String Now() {
-    //char buffer[11];
-    //time_t t;
-    //time(&t);
-    //tm r = {0};
-    //strftime(buffer, sizeof(buffer), "%X", localtime_r(&t, &r));
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-    char result[100] = {0};
-    std::sprintf(result, "%010ld.%06ld", (long)tv.tv_sec, (long)tv.tv_usec); 
-    return result;
-}
-
-class NameID_Log {
-    std::fstream _fp;
-    class Logger : public Log {
-        const char* _name;
-        int _id;
-    public:
-        Logger(std::ostream& fp, const char* name, int id): Log(fp) {
-            _id = id;
-            _name = name;
-        }
-        std::ostream& Get() {
-            Log::Get() << _name << " - " << _id << " : ";
-            return Log::os;
-        }
-    };
-    Logger* log;
+class LogInstance {
+private:
+  String buffer_;
+  String mode_, file_, line_;
 public:
-    NameID_Log(const char* name,int id){
-        String fn = "log.txt";
-        // fn.append(std::to_string(getpid()));
-        // fn.append(".txt");
-        _fp.open(fn.c_str(),std::ofstream::out | std::ofstream::app);
-        log = new Logger(_fp,name,id);
-    }
-    ~NameID_Log(){
-        delete log;
-        _fp.close();
-    }
-    inline NameID_Log& operator<<(String str) {
-        *log << str;
-        return *this;
-    }
-    inline NameID_Log& operator<<(Json j) {
-        *log << j.unparse();
-        return *this;
-    }
-    inline NameID_Log& operator<<(const char* str) {
-        *log << String(str);
-        return *this;
-    }
+  LogInstance(const char *mode, const char *file, const int line) : mode_(mode), file_(file), line_(line) {};
+  LogInstance& operator<< (String rhs) {
+    buffer_.append(rhs);
+    return *this;
+  }
+  LogInstance& operator<< (const char* rhs) {
+    buffer_.append(rhs);
+    return *this;
+  }
+  LogInstance& operator<< (int rhs) {
+    buffer_.append(String(rhs));
+    return *this;
+  }
+  LogInstance& operator<< (Json rhs) {
+    buffer_.append(rhs.unparse());
+    return *this;
+  }
+  ~LogInstance() {
+    struct timeval tv;
+    int64_t time_int;
+    String final_buffer;
+
+    gettimeofday(&tv, 0);
+    time_int = tv.tv_sec*1000000 + tv.tv_usec;
+    
+    final_buffer += String(time_int);
+    final_buffer += String(" [");
+    final_buffer += String(getpid());
+    final_buffer += String(":");
+    final_buffer += file_;
+    final_buffer += ":";
+    final_buffer += line_;
+    final_buffer += "] ";
+    final_buffer += mode_;
+    final_buffer += ": ";
+    final_buffer += buffer_;
+    final_buffer += "\n";
+    LogState::get() << final_buffer;
+  }
 };
 
 #endif // __LOG_H__

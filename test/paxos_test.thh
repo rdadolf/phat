@@ -1,8 +1,9 @@
 #define PAXOS 1
 tamed void run() {
     tvars {
-        puppet::Puppet A,B,C,D,E;
+        puppet::Puppet A,B,C,D;
     }
+    A.spawn("rm -f *_persist");
     A.spawn("./paxos_driver");
     sleep(1);
     B.spawn("./server_driver -P 15807 -p 15810 -x 15900");

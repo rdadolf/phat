@@ -23,6 +23,12 @@ private:
   std::vector<int> paxi_;
   paxos::Paxos_Proposer* proposer_;
   paxos::Paxos_Acceptor* acceptor_;
+  // so that old tests work
+#if PAXOS 
+  const int paxos_yes_ = 1;
+#else 
+  const int paxos_yes_ = 0;
+#endif
 
 
   Json fs_image_; // ALL DATA EVER.
