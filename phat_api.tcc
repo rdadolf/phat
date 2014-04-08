@@ -23,7 +23,7 @@ Phat_Interface::Phat_Interface(const Server_t contact_point)
 
 tamed void Phat_Interface::init(const Server_t contact_point)
 {
-  INFO() << "init called" << std::endl;
+  INFO() << "init called";
 
   // Assume contact point is master. They'll tell us otherwise.
   master_ = contact_point;
@@ -36,7 +36,7 @@ tamed void Phat_Interface::init(const Server_t contact_point)
   // Now ask for replica list
   twait { get_replica_list(make_event()); } // FIXME: NYI
 
-  INFO() << "init finished" << std::endl;
+  INFO() << "init finished";
 }
 
 tamed void Phat_Interface::get_master(tamer::event<> ev)
@@ -48,21 +48,21 @@ tamed void Phat_Interface::get_master(tamer::event<> ev)
     tamer::fd cfd;
   }
 
-  INFO() << "get_master called" << std::endl;
+  INFO() << "get_master called";
 
   do {
-    INFO() << "Attempting to contact master " << server_string(master_) << std::endl;
+    INFO() << "Attempting to contact master " << server_string(master_);
     twait { tamer::tcp_connect(master_.ip, master_.port, make_event(cfd)); }
     if( !cfd ) {
-      ERROR() << "Couldn't connect to potential master at " << server_string(master_) << std::endl;
+      ERROR() << "Couldn't connect to potential master at " << server_string(master_);
       exit(-1);
     }
     master_fd_.initialize(cfd); // Assume we have the true master.
-    INFO() << "Potential master connected. Requesting master info." << std::endl;
+    INFO() << "Potential master connected. Requesting master info.";
     request_master = RPC_Msg(Json::array(String("get_master")));
     twait { master_fd_.call(request_master, make_event(reply_master.json())); }
     if( !master_fd_ ) { // disconnected
-      ERROR() << "Master candidate unexpectedly hungup. No contact points." << std::endl;
+      ERROR() << "Master candidate unexpectedly hungup. No contact points.";
       // FIXME: Do we really have no contacts here? If so, must that be true?
       exit(-1);
     }
@@ -86,7 +86,7 @@ tamed void Phat_Interface::get_master(tamer::event<> ev)
     }
   } while( !master_known );
 
-  INFO() << "Master identified" << std::endl;
+  INFO() << "Master identified";
 
   ev();
 }
@@ -110,12 +110,12 @@ tamed void Phat_Interface::getroot( tamer::event<Handle> ev )
     Handle retval;
   }
 
-  INFO() << "(API) getroot called" << std::endl;
+  INFO() << "(API) getroot called";
 
   request = RPC_Msg(Json::array(String("getroot")));
   twait { master_fd_.call(request, make_event(reply.json())); }
   if( !master_fd_ ) {
-    WARN() << "Master connection lost" << std::endl;
+    WARN() << "Master connection lost";
     // FIXME: implement failover
     exit(-1);
   }
@@ -123,12 +123,12 @@ tamed void Phat_Interface::getroot( tamer::event<Handle> ev )
   if( reply.content()[0]=="ACK" ) {
     retval = reply.content()[1];
   } else {
-    ERROR() << "Getroot failed " << reply.json() << std::endl;
+    ERROR() << "Getroot failed " << reply.json();
     // Don't exit. Let's see what happens.
     // FIXME: Is this the right behavior?
   }
 
-  INFO() << "(API) getroot returned " << retval << std::endl;
+  INFO() << "(API) getroot returned " << retval;
   ev(retval);
 }
 
@@ -144,18 +144,18 @@ tamed void Phat_Interface::mkfile(Json args, tamer::event<Handle> ev)
     Handle retval;
   }
 
-  INFO() << "(API) mkfile called " << args << std::endl;
+  INFO() << "(API) mkfile called " << args;
   request = RPC_Msg(args);
   twait { master_fd_.call(request,make_event(reply.json())); }
   if (!master_fd_) {
-    WARN() << "Master connection lost" << std::endl;
+    WARN() << "Master connection lost";
     exit(-1);
   }
   if (reply.content()[0] == "ACK")
     retval = reply.content()[1];
   else
-    ERROR() << "Mkfile failed " << reply.json() << std::endl;
-  INFO() << "(API) mkfile returned " << retval << std::endl;
+    ERROR() << "Mkfile failed " << reply.json();
+  INFO() << "(API) mkfile returned " << retval;
   ev(retval); // FIXME: NYI
 }
 

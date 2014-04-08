@@ -33,7 +33,7 @@ void Phat_Server::fs_init() {
 
 void Phat_Server::run_master_server()
 {
-  INFO() << "Running phat master server" << std::endl;
+  INFO() << "Running phat master server";
   i_am_master_ = true;
   handle_new_connections(listen_port_);
 }
@@ -58,7 +58,7 @@ tamed void Phat_Server::handle_new_connections(int port)
     exit(-1);
   }
 
-  INFO() << "Phat server listening on " << port << std::endl;
+  INFO() << "Phat server listening on " << port;
 
   while(listen_fd) {
     twait {
@@ -78,7 +78,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
   mpfd.initialize(client_fd);
   while(mpfd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    INFO() << "Received RPC: " << request.json() << std::endl;
+    INFO() << "Received RPC: " << request.json();
     if(!mpfd)
       break;
     if( request.validate() ) {
@@ -109,9 +109,9 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     } else {
       reply = RPC_Msg( Json::array(String("NACK")), request );
     }
-    INFO() << "Writing reply: " << reply.json() << std::endl;
+    INFO() << "Writing reply: " << reply.json();
     mpfd.write(reply);
-    INFO() << "Reply written." << std::endl;
+    INFO() << "Reply written.";
   }
 }
 
@@ -261,7 +261,7 @@ Json Phat_Server::remove(Json args) {
 
 Json Phat_Server::get_master(Json args)
 {
-  INFO() << "get_master service routine called" << std::endl;
+  INFO() << "get_master service routine called";
   if( i_am_master_ ) {
     return Json::array(String("ACK"));
   } else {
