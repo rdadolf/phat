@@ -1,10 +1,10 @@
 .PHONY: default test
 
-CPP_TEMPS= client_driver.cc paxos.cc paxos_test.cc phat_api.cc phat_server.cc puppet.cc server_driver.cc
+CPP_TEMPS= client_driver.cc paxos.cc paxos_test.cc phat_api.cc phat_server.cc puppet.cc server_driver.cc paxos_driver.cc
 HPP_TEMPS= paxos.hh phat_api.hh phat_server.hh puppet.hh
 .SECONDARY:$(CPP_TEMPS) $(HPP_TEMPS)
 
-default: server_driver client_driver puppet
+default: server_driver client_driver paxos_driver puppet
 
 # Test scripts
 clean_puppet:
@@ -51,9 +51,13 @@ client_driver: client_driver.o phat_api.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) 
 
 server_driver.o: server_driver.cc $(SERVER_HDR)
 phat_server.o: phat_server.cc $(SERVER_HDR)
-paxos.o: paxos.cc $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
+paxos.o: paxos.cc paxos.hh $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
 server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
-	$(CXX) server_driver.o phat_server.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
+	$(CXX) server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
+
+paxos_driver.o: paxos_driver.cc paxos.hh
+paxos_driver: paxos_driver.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
+	$(CXX) paxos_driver.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) -o paxos_driver $(LDFLAGS)	
 
 TEST_SCRIPT ?= test/simple.hh
 puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) $(MPRPC_SRC) $(TEST_SCRIPT)
@@ -67,11 +71,9 @@ puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) 
 %.hh: %.thh
 	$(TAMERC) $(TAMERFLAGS) -o $@ $<
 
-ex/log_test.o: ex/log_test.cc
-
 # Cleanup
 clean:
-	rm -f client_driver server_driver puppet paxos_test *.o
+	rm -f client_driver server_driver paxos_driver puppet paxos_test *.o *_persist
 	rm -rf *.dSYM
 	rm -f $(CPP_TEMPS)
 	rm -f $(HPP_TEMPS)

@@ -81,7 +81,6 @@ tamed void Client_Puppet::service_getroot(Json args, tamer::event<> ev )
   }
 
   INFO() << "Client servicing getroot request" << std::endl;
-  INFO() << "HERE" << std::endl;
 
   twait{ phat_.getroot(make_event(h)); }
 
@@ -99,7 +98,7 @@ tamed void Client_Puppet::service_mkfile(Json args, tamer::event<> ev)
   tvars {
     Handle h;
   }
-  INFO() << "Client servicing getroot request" << std::endl;
+  INFO() << "Client servicing mkfile request" << std::endl;
 
   twait{ phat_.mkfile(args,make_event(h)); }
   ev();

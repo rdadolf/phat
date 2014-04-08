@@ -2,11 +2,11 @@
 #ifndef _PAXOS_THH
 #define _PAXOS_THH
 
+#include <fcntl.h>
+#include <unistd.h>
 #include "mpfd.hh"
 #include "log.hh"
 #include <netdb.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #define WAIT            0   // waiting to start
 #define PREPARE         1   // prepare message
@@ -14,6 +14,10 @@
 #define DECIDED         3   // decided message
 #define PREPARED        4   // prepared message
 #define ACCEPTED        5   // accepted message
+
+namespace phat {
+    class Phat_Server;
+}
 
 namespace paxos {
 
@@ -28,18 +32,37 @@ public:
     std::vector<Json> res;
     int f;
     int n_p,n_o,a;
+    int uid_;
     Json v_o,v_c; // v_c is the value to choose
-    NameID_Log log;
+
+    // persist to disk
+    int fd_;
 
 
-    // Paxos_Proposer() {};
-    Paxos_Proposer(const char* host,std::vector<int> ps,int f_i) :
+    Paxos_Proposer(int uid, const char* host,std::vector<int> ps,int f_i) :
         hostname(host), ports(ps),
         cfd(ps.size()),
         mpfd(ps.size()),
         res(ps.size()),
-        f(f_i), n_p(0), v_o(), v_c(),
-        log("Proposer",getpid()) {
+        f(f_i), n_p(0), uid_(uid),
+        v_o(Json::null), v_c(Json::null){
+
+        String fn(uid_);
+        fn += "_proposer_persist";
+        fd_ = open(fn.c_str(),O_RDWR|O_CREAT);
+        int sz = lseek(fd_,0,SEEK_END);
+        lseek(fd_,0,SEEK_SET);
+        char* buf = (char*) malloc(sizeof(char) * (sz + 1));
+        read(fd_,buf,sz);
+        buf[sz] = 0;
+        Json tmp = Json::parse(buf);
+        delete buf;
+        if (tmp["n_p"] != Json::null) {
+            assert(tmp["n_p"].is_i());
+            n_p = tmp["n_p"].as_i();
+            INFO() << "PERSISTED n_p: " << n_p << std::endl;
+        }
+        persist();
     }
     ~Paxos_Proposer() {
         for (std::vector<int>::size_type i = 0; i < ports.size() ; ++i)
@@ -48,9 +71,21 @@ public:
         cfd.clear();
         mpfd.clear();
         res.clear();
+        close(fd_);
+        String fn(uid_);
+        fn += "_proposer_persist";
+        remove(fn.c_str()); // remove persisted file
     }
     void set_vc(Json v) {
         v_c = v;
+    }
+    void persist() {
+        Json tmp = Json::make_object();
+        tmp.set("n_p", n_p);
+        lseek(fd_,0,SEEK_SET);
+        String s = tmp.unparse();
+        write(fd_,s.c_str(),s.length());
+        ftruncate(fd_,s.length());
     }
 
     tamed void proposer_init(tamer::event<> done);
@@ -67,28 +102,79 @@ class Paxos_Acceptor{
 public:
     typedef Paxos_Acceptor paccept_type;
 
+    phat::Phat_Server* me_;
+
     int port;
     Json v_a;
     int n_l, n_a;
-    NameID_Log log;
+
+    // persist to disk
+    int fd_;
+
 
     Paxos_Acceptor() : 
+        me_(NULL),
         port(18029),
-        v_a (Json::make_array()), 
-        n_l(0),n_a(0),
-        log("Acceptor",getpid()) {
+        v_a (Json::null), 
+        n_l(0),n_a(0) {
+
+        persist_init();
     }
-    Paxos_Acceptor(int p) : 
+    Paxos_Acceptor(phat::Phat_Server* me,int p) : 
+        me_(me),
         port(p),
-        v_a (Json::make_array()), 
-        n_l(0),n_a(0),
-        log("Acceptor",getpid()) {
+        v_a (Json::null), 
+        n_l(0),n_a(0) {
+
+        persist_init();
+    }
+
+    ~Paxos_Acceptor() {
+        close(fd_);
+        String fn(port);
+        fn += "_acceptor_persist";
+        remove(fn.c_str()); // remove persisted file
     }
 
     void prepare_message(Json& req, Json& res, int type) {
         res[0] = -req[0].as_i();
         res[1] = req[1];
         res[2] = type;
+    }
+
+    void persist_init(){ 
+        String fn(port);
+        fn += "_acceptor_persist";
+        fd_ = open(fn.c_str(),O_RDWR|O_CREAT);
+        int sz = lseek(fd_,0,SEEK_END);
+        lseek(fd_,0,SEEK_SET);
+        char* buf = (char*) malloc(sizeof(char) * (sz + 1));
+        read(fd_,buf,sz);
+        buf[sz] = 0;
+        Json tmp = Json::parse(buf);
+        delete buf;
+        if (tmp["n_a"] != Json::null && tmp["n_l"] != Json::null
+            && tmp["v_a"] != Json::null) {
+            assert(tmp["n_a"].is_i() && tmp["n_l"].is_i());
+            n_a = tmp["n_a"].as_i();
+            n_l = tmp["n_l"].as_i();
+            v_a = tmp["v_a"];
+            INFO() << "PERSISTED n_a: " << n_a << std::endl;
+            INFO() << "PERSISTED n_l: " << n_l << std::endl;
+            INFO() << "PERSISTED v_a: " << v_a << std::endl;
+        }
+        persist();
+    }
+
+    void persist() {
+        Json tmp = Json::make_object();
+        tmp.set("n_a", n_a);
+        tmp.set("n_l", n_l);
+        tmp.set("v_a", v_a);
+        lseek(fd_,0,SEEK_SET);
+        String s = tmp.unparse();
+        write(fd_,s.c_str(),s.length());
+        ftruncate(fd_,s.length());
     }
 
     tamed void acceptor_init(tamer::event<> done);
@@ -112,7 +198,7 @@ public:
         for (std::vector<int>::size_type i = 0; i < ports.size(); ++i)
             _ports.push_back(ports[i]);
     }
-    tamed void listen();
+    tamed void listen(tamer::event<> ev);
     tamed void handle_request(tamer::fd cfd);
 };
 

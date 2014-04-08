@@ -1,26 +1,15 @@
+#define PAXOS 1
 tamed void run() {
     tvars {
-        puppet::Puppet A;
-        paxos::Paxos_Master pm;
-        std::vector<int> paxi;
-        std::vector<int>::size_type i;
+        puppet::Puppet A,B,C,D,E;
     }
-    for (i = 0; i < 3; ++i)
-        paxi.push_back(15900 + i);
-    
-    pm = paxos::Paxos_Master(15800,paxi);
-    
-    pm.listen();
+    A.spawn("./paxos_driver");
     sleep(1);
-    A.spawn("./server_driver -p 15810 -x 15811");
-    twait {tamer::at_delay(10,make_event()); }
-    // twait { A.connect("localhost",15807,make_event()); }
-
-    // twait {
-    //   A.send_mkfile("val", String("/test.txt"), String("test"),make_event());
-    // }
-
-    // twait {
-    //   tamer::at_delay(5, make_event());
-    // }
+    B.spawn("./server_driver -P 15807 -p 15810 -x 15900");
+    C.spawn("./server_driver -P 15808 -p 15811 -x 15901");
+    D.spawn("./server_driver -P 15809 -p 15812 -x 15902");
+    sleep(1);
+    twait { B.connect("localhost",15807,make_event()); }
+    twait { B.send_elect_me(make_event()); }
+    twait {tamer::at_delay(3,make_event()); }
 }

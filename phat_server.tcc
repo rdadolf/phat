@@ -12,7 +12,7 @@
 
 using namespace phat;
 
-Phat_Server::Phat_Server()
+Phat_Server::Phat_Server(): master_(-1)
 {
   listen_port_ = 15810;
   paxos_port_ = 15811;
@@ -20,7 +20,7 @@ Phat_Server::Phat_Server()
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port)
+Phat_Server::Phat_Server(int port): master_(-1)
 {
   listen_port_ = port;
   paxos_port_ = 15811;
@@ -28,7 +28,7 @@ Phat_Server::Phat_Server(int port)
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port, int paxos, int pm) {
+Phat_Server::Phat_Server(int port, int paxos, int pm): master_(-1) {
   listen_port_ = port;
   paxos_port_ = paxos;
   paxos_master_ = pm;
@@ -43,7 +43,7 @@ void Phat_Server::fs_init() {
 tamed void Phat_Server::run_master_server()
 {
   INFO() << "Running phat master server" << std::endl;
-  i_am_master_ = true;
+  i_am_master_ = false;
   fs_init();
   twait { get_paxos_group(make_event()); }
   handle_new_connections(listen_port_);
@@ -57,13 +57,27 @@ void Phat_Server::run_replica_server()
 tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
   tvars {
     RPC_Msg req, res;
+    unsigned i;
+    tamer::event<> e;
   }
-  INFO() << "in get_paxos" << std::endl;
   twait { connect("localhost",paxos_master_,make_event(paxm_mpfd_)); }
   req = RPC_Msg(Json::array("ports"));
-  INFO() << "in get_paxos2" << std::endl;
   twait { paxm_mpfd_.call(req,make_event(res.json())); }
-  INFO() << "get paxos group: " << res.content() << std::endl;
+  if (!res.content()[0].is_s() || res.content()[0].as_s() != "ACK") {
+    ERROR() << "Can't get paxos group" << std::endl;
+    exit(-1);
+  }
+  INFO() << "Got paxos group: " << res.content()[1] << std::endl;
+  assert(res.content()[1].is_a());
+  for (i = 0; i < res.content()[1].size(); ++i) {
+    assert(res.content()[1][i].is_i());
+    paxi_.push_back(res.content()[1][i].as_i());
+  }
+  // initialize paxos
+  acceptor_ = new paxos::Paxos_Acceptor(this,paxos_port_);
+  acceptor_->acceptor_init(e);
+  proposer_ = new paxos::Paxos_Proposer(paxos_port_,"localhost",paxi_,paxi_.size() / 2);
+  twait { proposer_->proposer_init(make_event()); }
   ev();
 }
 
@@ -83,7 +97,7 @@ tamed void Phat_Server::connect(String hostname, int port, tamer::event<msgpack_
 
   twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
   if( !cfd ) {
-    ERROR() << "Couldn't connect to " << hostname << ": " << strerror(-cfd.error()) << std::endl;
+    ERROR() << "Couldn't connect to " << hostname << ":" << port << ": " << strerror(-cfd.error()) << std::endl;
     exit(-1);
   }
 
@@ -121,7 +135,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
 {
   tvars {
     msgpack_fd mpfd;
-    RPC_Msg request, reply;
+    RPC_Msg request, reply, res;
   }
 
   mpfd.initialize(client_fd);
@@ -151,6 +165,9 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
       //   reply = RPC_Msg( stat(request.content()[1]), request);
       // } else if( request.content()[0]=="remove" ) {
       //   reply = RPC_Msg( remove(request.content()[1]), request);
+      } else if( request.content()[0]=="elect_me" ) {
+        twait { elect_me(make_event(res.json())); }
+        reply = RPC_Msg(res.json(),request);
       // } else if( request.content()[0]=="<other thing here>" ) {
       } else {
         reply = RPC_Msg( Json::array(String("NACK")), request );
@@ -165,6 +182,17 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+tamed void Phat_Server::elect_me(tamer::event<Json> ev) {
+  tvars{
+    Json v;
+  }
+  v = Json::array("master",paxos_port_);
+  INFO() << "Elect: "<< paxos_port_ << std::endl;
+  twait {proposer_->run_instance(v,make_event(*ev.result_pointer())); }
+  INFO() << "Master is now: " << master_ << std::endl;
+  ev.unblock();
+}
 
 Json Phat_Server::getroot(Json args)
 {

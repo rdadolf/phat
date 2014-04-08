@@ -38,6 +38,7 @@ public:
   tamed void send_print(String name, tamer::event<> ev);
   tamed void send_die(tamer::event<> ev);
   tamed void send_sleep(int seconds, tamer::event<> ev);
+  tamed void send_elect_me(tamer::event<> ev);
 
   // Client operations
   tamed void send_getroot(String lhs, tamer::event<> ev);
@@ -128,6 +129,15 @@ tamed void Puppet::send_print(String name, tamer::event<> ev)
 
   // FIXME: validate
   // FIXME: assert not NACK
+  ev();
+}
+
+tamed void Puppet::send_elect_me(tamer::event<> ev) {
+  tvars {
+    RPC_Msg req,res;
+  }
+  req = RPC_Msg(Json::array("elect_me"));
+  twait { mpfd_.call(req,make_event(res.json())); }
   ev();
 }
 
@@ -366,6 +376,7 @@ void Puppet_Server::dispatch(String tag, Json args, tamer::event<> ev)
   INFO() << "Puppet dispatch finished." << std::endl;
   // No warning about unknown messages, to allow extensibility via inheritance
   // Child class will call its own dispatch after this.
+  ev();
 }
 
 void Puppet_Server::service_print(Json args, tamer::event<> ev)

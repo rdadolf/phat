@@ -40,14 +40,19 @@ void Server_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 {
   puppet::Puppet_Server::dispatch(tag, args, ev);
 
-  if(tag=="electme")
+  if(tag=="elect_me")
     service_electme(args, ev);
   // No warning about unknown messages, to allow extensibility via inheritance.
 }
 
 tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
 {
-  // FIXME: NYI
+  tvars {
+    Json r;
+  }
+  INFO() << "in Server_Puppet elect" << std::endl;
+  twait { phat_.elect_me(make_event(r)); }
+  INFO() << "returned: " << r << std::endl;
 
   ev();
 }
