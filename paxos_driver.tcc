@@ -33,7 +33,7 @@ int main(int argc, char const *argv[]) {
       }
     }
 
-    INFO() << "Paxos Master Driver is set up at PID " << getpid() << std::endl;
+    INFO() << "Paxos Master Driver is set up at PID " << getpid();
 
     std::vector<int> ports;
     for (int i = 0; i < n; i++)

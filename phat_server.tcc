@@ -42,7 +42,7 @@ void Phat_Server::fs_init() {
 
 tamed void Phat_Server::run_master_server()
 {
-  INFO() << "Running phat master server" << std::endl;
+  INFO() << "Running phat master server";
   i_am_master_ = false;
   fs_init();
   twait { get_paxos_group(make_event()); }
@@ -64,10 +64,10 @@ tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
   req = RPC_Msg(Json::array("ports"));
   twait { paxm_mpfd_.call(req,make_event(res.json())); }
   if (!res.content()[0].is_s() || res.content()[0].as_s() != "ACK") {
-    ERROR() << "Can't get paxos group" << std::endl;
+    ERROR() << "Can't get paxos group";
     exit(-1);
   }
-  INFO() << "Got paxos group: " << res.content()[1] << std::endl;
+  INFO() << "Got paxos group: " << res.content()[1];
   assert(res.content()[1].is_a());
   for (i = 0; i < res.content()[1].size(); ++i) {
     assert(res.content()[1][i].is_i());
@@ -89,15 +89,15 @@ tamed void Phat_Server::connect(String hostname, int port, tamer::event<msgpack_
   }
 
   if( !get_ip_address( hostname.c_str(), hostip ) ) {
-    ERROR() << "Can't find " << hostname << ": " << strerror(errno) << std::endl;
+    ERROR() << "Can't find " << hostname << ": " << strerror(errno);
     exit(-1);
   }
   
-  INFO() << "Connecting to " << inet_ntoa(hostip) << ":" << port << std::endl;
+  INFO() << "Connecting to " << inet_ntoa(hostip) << ":" << port;
 
   twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
   if( !cfd ) {
-    ERROR() << "Couldn't connect to " << hostname << ":" << port << ": " << strerror(-cfd.error()) << std::endl;
+    ERROR() << "Couldn't connect to " << hostname << ":" << port << ": " << strerror(-cfd.error());
     exit(-1);
   }
 
@@ -121,7 +121,7 @@ tamed void Phat_Server::handle_new_connections(int port)
     exit(-1);
   }
 
-  INFO() << "Phat server listening on " << port << std::endl;
+  INFO() << "Phat server listening on " << port;
 
   while(listen_fd) {
     twait {
@@ -141,7 +141,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
   mpfd.initialize(client_fd);
   while(mpfd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    INFO() << "Received RPC: " << request.json() << std::endl;
+    INFO() << "Received RPC: " << request.json();
     if(!mpfd)
       break;
     if( request.validate() ) {
@@ -175,9 +175,9 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     } else {
       reply = RPC_Msg( Json::array(String("NACK")), request );
     }
-    INFO() << "Writing reply: " << reply.json() << std::endl;
+    INFO() << "Writing reply: " << reply.json();
     mpfd.write(reply);
-    INFO() << "Reply written." << std::endl;
+    INFO() << "Reply written.";
   }
 }
 
@@ -188,9 +188,9 @@ tamed void Phat_Server::elect_me(tamer::event<Json> ev) {
     Json v;
   }
   v = Json::array("master",paxos_port_);
-  INFO() << "Elect: "<< paxos_port_ << std::endl;
+  INFO() << "Elect: "<< paxos_port_;
   twait {proposer_->run_instance(v,make_event(*ev.result_pointer())); }
-  INFO() << "Master is now: " << master_ << std::endl;
+  INFO() << "Master is now: " << master_;
   ev.unblock();
 }
 
@@ -338,7 +338,7 @@ Json Phat_Server::remove(Json args) {
 
 Json Phat_Server::get_master(Json args)
 {
-  INFO() << "get_master service routine called" << std::endl;
+  INFO() << "get_master service routine called";
   if( i_am_master_ ) {
     return Json::array(String("ACK"));
   } else {

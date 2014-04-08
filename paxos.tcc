@@ -43,7 +43,7 @@ tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd
 
     twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
     while (!cfd) {
-        INFO() << "delaying: " << s << std::endl;
+        INFO() << "delaying: " << s;
         twait { tamer::at_delay_msec(s,make_event()); }
         twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
         if (s <= 10000)
@@ -82,14 +82,14 @@ tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
         bool to;
     }
     set_vc(_v);
-    INFO() << "starting instance" << std::endl;;
+    INFO() << "starting instance";;
 start:
     
     propose(n,v,r1.make_event(false));
     tamer::at_delay_sec(4,r1.make_event(true));
     twait(r1,to);
     if (to) { // timeout happened
-        INFO() << "restarting after propose" << std::endl;;
+        INFO() << "restarting after propose";;
         goto start;
     }
 
@@ -102,13 +102,13 @@ start:
     tamer::at_delay_sec(4,r2.make_event(true));
     twait(r2,to);
     if (to) {
-        INFO() << "restarting after accept" << std::endl;;
+        INFO() << "restarting after accept";;
         goto start;
     }
     
     req = Json::array(1,Json::null,DECIDED,n_p,v_o);
     twait { send_to_all(req,make_event()); }
-    INFO() << "decided" << std::endl;;
+    INFO() << "decided";;
 
     *done.result_pointer() = v_o;
     done.unblock();
@@ -126,7 +126,7 @@ tamed void Paxos_Proposer::propose(int n, Json v, tamer::event<> done) {
     persist();
     n_o = a = 0;
     req = Json::array(1,Json::null,PREPARE,n_p);
-    INFO() << "propose: " << req << std::endl;;
+    INFO() << "propose: " << req;;
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i]));
@@ -157,7 +157,7 @@ tamed void Paxos_Proposer::accept(int n, tamer::event<> done) {
         Json req;
         std::vector<int>::size_type i;
     }
-    INFO() << "accept" << std::endl;;
+    INFO() << "accept";;
     n_p = std::max(n_o,n_p);
     persist();
     req = Json::array(1,Json::null,ACCEPT,n_p,v_o);
@@ -183,9 +183,9 @@ tamed void Paxos_Acceptor::acceptor_init(tamer::event<> done) {
     }
     sfd = tamer::tcp_listen(port);
     if (sfd)
-        INFO() << "listening on port " << port << std::endl;
+        INFO() << "listening on port " << port;
     else
-        ERROR() << "listen: " << strerror(-sfd.error()) << std::endl;
+        ERROR() << "listen: " << strerror(-sfd.error());
     while (sfd) {
         twait { sfd.accept(make_event(cfd)); }
         handle_request(cfd);
@@ -205,31 +205,31 @@ tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
         if (!req || !req.is_a() || req.size() < 4 || !req[0].is_i()
             || !req[1].is_i() || !req[2].is_i()) {
 
-            INFO() << "bad RPC: " << req << std::endl;;
+            INFO() << "bad RPC: " << req;;
             break;
         }
         switch(req[2].as_i()) {
             case PREPARE:
-                INFO() << "prepare" << std::endl;;
+                INFO() << "prepare";;
                 assert(req.size() == 4);
                 n = req[3].as_i();
                 prepare(mpfd,req,n);
                 break;
             case ACCEPT:
-                INFO() << "accept: " << req << std::endl;;
+                INFO() << "accept: " << req;;
                 assert(req.size() == 5 && req[4].is_a());
                 n = req[3].as_i();
                 v = req[4];
                 accept(mpfd,req,n,v);
                 break;
             case DECIDED:
-                INFO() << "decided" << std::endl;;
+                INFO() << "decided";;
                 assert(req.size() == 5 && req[4].is_a());
                 v = req[4];
                 decided(mpfd,req,v);
                 break;
             default:
-                INFO() << "bad Paxos request: " << req << std::endl;;
+                INFO() << "bad Paxos request: " << req;;
                 break;
         }
     }
@@ -284,9 +284,9 @@ tamed void Paxos_Master::listen(tamer::event<> ev) {
     }
     sfd = tamer::tcp_listen(_port);
     if (sfd)
-        INFO() << "listening on port " << _port << std::endl;
+        INFO() << "listening on port " << _port;
     else
-        ERROR() << "listen: " << strerror(-sfd.error()) << std::endl;
+        ERROR() << "listen: " << strerror(-sfd.error());
     while (sfd) {
         twait { sfd.accept(make_event(cfd)); }
         handle_request(cfd);
@@ -305,7 +305,7 @@ tamed void Paxos_Master::handle_request(tamer::fd cfd) {
             res = RPC_Msg(Json::array("NACK"),req);
         else
             res = RPC_Msg(Json::array("ACK",_ports),req);
-        INFO() << "handle paxos group request: " << res.content() << std::endl;
+        INFO() << "handle paxos group request: " << res.content();
         mpfd.write(res);
     }
 }

@@ -60,7 +60,7 @@ public:
         if (tmp["n_p"] != Json::null) {
             assert(tmp["n_p"].is_i());
             n_p = tmp["n_p"].as_i();
-            INFO() << "PERSISTED n_p: " << n_p << std::endl;
+            INFO() << "PERSISTED n_p: " << n_p;
         }
         persist();
     }
@@ -159,9 +159,9 @@ public:
             n_a = tmp["n_a"].as_i();
             n_l = tmp["n_l"].as_i();
             v_a = tmp["v_a"];
-            INFO() << "PERSISTED n_a: " << n_a << std::endl;
-            INFO() << "PERSISTED n_l: " << n_l << std::endl;
-            INFO() << "PERSISTED v_a: " << v_a << std::endl;
+            INFO() << "PERSISTED n_a: " << n_a;
+            INFO() << "PERSISTED n_l: " << n_l;
+            INFO() << "PERSISTED v_a: " << v_a;
         }
         persist();
     }

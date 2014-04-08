@@ -50,9 +50,9 @@ tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
   tvars {
     Json r;
   }
-  INFO() << "in Server_Puppet elect" << std::endl;
+  INFO() << "in Server_Puppet elect";
   twait { phat_.elect_me(make_event(r)); }
-  INFO() << "returned: " << r << std::endl;
+  INFO() << "returned: " << r;
 
   ev();
 }
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
   }
 
-  INFO() << "Server Driver up at PID " << getpid() << std::endl;
+  INFO() << "Server Driver up at PID " << getpid();
   Server_Puppet puppet_server(puppet_port, phat_port, paxos_port, paxos_master);
 
   tamer::loop();
