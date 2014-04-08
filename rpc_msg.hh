@@ -1,3 +1,6 @@
+#ifndef _RPC_MSG_
+#define _RPC_MSG_
+
 #include "json.hh"
 
 class RPC_Msg { 
@@ -26,3 +29,5 @@ class RPC_Msg {
     operator bool() { return data_; }
     Json& content() { return data_[2]; }
 };
+
+#endif // _RPC_MSG_

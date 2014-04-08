@@ -1,4 +1,3 @@
-#define PAXOS 1
 tamed void run() {
     tvars {
         puppet::Puppet A,B,C,D;

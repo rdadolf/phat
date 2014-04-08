@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include "mpfd.hh"
+#include "rpc_msg.hh"
 #include "log.hh"
 #include <netdb.h>
 
@@ -29,7 +30,7 @@ public:
     std::vector<int> ports;
     std::vector<tamer::fd> cfd;
     std::vector<msgpack_fd> mpfd;
-    std::vector<Json> res;
+    std::vector<RPC_Msg> res;
     int f;
     int n_p,n_o,a;
     int uid_;
@@ -91,7 +92,7 @@ public:
     tamed void proposer_init(tamer::event<> done);
     tamed void client_init(const char* hostname, int port, tamer::fd& cfd, 
                             msgpack_fd& mpfd, struct in_addr& hostip,tamer::event<> done);
-    tamed void send_to_all(Json& req,tamer::event<> done);
+    tamed void send_to_all(RPC_Msg& req,tamer::event<> done);
     tamed void run_instance(Json v,tamer::event<Json> done);
     tamed void propose(int n, Json v,tamer::event<> done);
     tamed void accept(int n , tamer::event<> done);
@@ -136,12 +137,6 @@ public:
         remove(fn.c_str()); // remove persisted file
     }
 
-    void prepare_message(Json& req, Json& res, int type) {
-        res[0] = -req[0].as_i();
-        res[1] = req[1];
-        res[2] = type;
-    }
-
     void persist_init(){ 
         String fn(port);
         fn += "_acceptor_persist";
@@ -179,9 +174,9 @@ public:
 
     tamed void acceptor_init(tamer::event<> done);
     tamed void handle_request(tamer::fd cfd);
-    tamed void prepare(msgpack_fd& mpfd, Json& req,int n);
-    tamed void accept(msgpack_fd& mpfd, Json& req, int n, Json v);
-    tamed void decided(msgpack_fd& mpfd, Json& req,Json v);
+    tamed void prepare(msgpack_fd& mpfd, RPC_Msg& req,int n);
+    tamed void accept(msgpack_fd& mpfd, RPC_Msg& req, int n, Json v);
+    tamed void decided(msgpack_fd& mpfd, RPC_Msg& req,Json v);
 };
 
 // class for getting the ports of the other members in the quorum

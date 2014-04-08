@@ -45,10 +45,7 @@ tamed void Phat_Server::run_master_server()
   INFO() << "Running phat master server";
   i_am_master_ = false;
   fs_init();
-  if (paxos_yes_)
-    twait { get_paxos_group(make_event()); }
-  else 
-    i_am_master_ = true;
+  twait { get_paxos_group(make_event()); }
   handle_new_connections(listen_port_);
 }
 

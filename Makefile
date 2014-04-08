@@ -100,7 +100,7 @@ puppet: puppet.o paxos.o puppet.hh paxos.hh rpc_msg.hh $(UTIL_OBJ) $(MPRPC_HDR) 
 
 # Cleanup
 clean:
-	rm -f client_driver server_driver paxos_driver puppet paxos_test *.o *_persist
+	rm -f client_driver server_driver paxos_driver puppet paxos_test *.o *_persist log.txt
 	rm -rf *.dSYM
 	rm -f $(CPP_TEMPS)
 	rm -f $(HPP_TEMPS)
