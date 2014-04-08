@@ -3,38 +3,51 @@ tamed void run()
   tvars {
     puppet::Puppet A, B, C, D, S0, S1, S2, S3, S4;
   }
-  puppet::spawn("client -p 15810");
-  puppet::spawn("client -p 15811");
-  puppet::spawn("client -p 15812");
-  puppet::spawn("client -p 15813");
-  puppet::spawn("phat -p 15814");
-  puppet::spawn("phat -p 15815");
-  puppet::spawn("phat -p 15816");
-  puppet::spawn("phat -p 15817");
-  puppet::spawn("phat -p 15818");
+
+  S0.spawn("./server_driver -P 15810");
+  S1.spawn("./server_driver -P 15811");
+  S2.spawn("./server_driver -P 15812");
+  S3.spawn("./server_driver -P 15813");
+  S4.spawn("./server_driver -P 15814");
+  A.spawn("./client_driver -P 15815");
+  B.spawn("./client_driver -P 15816");
+  C.spawn("./client_driver -P 15817");
+  D.spawn("./client_driver -P 15818");
+
   twait {
-    A.connect(make_event(),"localhost",15810);
-    B.connect(make_event(),"localhost",15810);
-    C.connect(make_event(),"localhost",15810);
-    D.connect(make_event(),"localhost",15810);
-    S0.connect(make_event(),"localhost",15810);
-    S1.connect(make_event(),"localhost",15810);
-    S2.connect(make_event(),"localhost",15810);
-    S3.connect(make_event(),"localhost",15810);
-    S4.connect(make_event(),"localhost",15810);
+    S0.connect("localhost", 15810, make_event());
+    S1.connect("localhost", 15811, make_event());
+    S2.connect("localhost", 15812, make_event());
+    S3.connect("localhost", 15813, make_event());
+    S4.connect("localhost", 15814, make_event());
+    A.connect("localhost", 15815, make_event());
+    B.connect("localhost", 15816, make_event());
+    C.connect("localhost", 15817, make_event());
+    D.connect("localhost", 15818, make_event());
   }
   printf("All puppets up.");
   twait {
-    A.send_getroot(make_event(),"root");
-    B.send_getroot(make_event(),"root");
+    A.send_getroot("%root",make_event());
+    B.send_getroot("%root",make_event());
   }
   twait {
-    A.send_mkfile("","root","/test","testdata");
+    A.send_mkfile("%afile","%root","/test","testdata");
   }
   twait {
-    B.send_open("","root","/test");
+    B.send_open("%bfile","%root","/test");
   }
   twait {
-    B.send_getcontents("data","fb");
+    B.send_getcontents("data","%bfile");
+  }
+  twait {
+    A.send_die(make_event());
+    B.send_die(make_event());
+    C.send_die(make_event());
+    D.send_die(make_event());
+    S0.send_die(make_event());
+    S1.send_die(make_event());
+    S2.send_die(make_event());
+    S3.send_die(make_event());
+    S4.send_die(make_event());
   }
 }

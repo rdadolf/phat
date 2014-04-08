@@ -79,7 +79,6 @@ public:
     final_buffer += ": ";
     final_buffer += buffer_;
     final_buffer += "\n";
-    std::cerr << "Logging: "<< final_buffer;
     LogState::get() << final_buffer;
   }
 };
