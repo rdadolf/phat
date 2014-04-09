@@ -1,9 +1,9 @@
 tamed void run()
 {
   tvars {
-    puppet::Puppet A, B;
+    puppet::Puppet A, B, C;
   }
-
+  C.spawn("./paxos_driver");
   B.spawn("./server_driver -P 15807");
   sleep(1);
   twait { B.connect("localhost",15807,make_event()); }

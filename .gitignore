@@ -10,6 +10,8 @@ phat_server.hh
 puppet
 puppet.cc
 puppet.hh
+paxos.cc
+paxos.hh
 scratch/ctl
 scratch/ctl.cc
 server_driver.cc

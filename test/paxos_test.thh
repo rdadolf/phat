@@ -1,5 +1,15 @@
 tamed void run() {
     tvars {
-        puppet::Puppet P;
+        puppet::Puppet A,B,C,D;
     }
+    A.spawn("rm -f *_persist");
+    A.spawn("./paxos_driver");
+    sleep(1);
+    B.spawn("./server_driver -P 15807 -p 15810 -x 15900");
+    C.spawn("./server_driver -P 15808 -p 15811 -x 15901");
+    D.spawn("./server_driver -P 15809 -p 15812 -x 15902");
+    sleep(1);
+    twait { B.connect("localhost",15807,make_event()); }
+    twait { B.send_elect_me(make_event()); }
+    twait {tamer::at_delay(3,make_event()); }
 }

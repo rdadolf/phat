@@ -10,11 +10,15 @@
 using namespace phat;
 
 int phat_port = 15810;
+int paxos_port = 15811;
 int puppet_port = 15808;
+int paxos_master = 15800;
 
 static Clp_Option options[] = {
   { "phat-port", 'p', 0, Clp_ValInt, 0 },
   { "puppet-port", 'P', 0, Clp_ValInt, 0 },
+  { "paxos-port", 'x', 0, Clp_ValInt, 0 },
+  { "paxos-master", 'm', 0, Clp_ValInt, 0 },
 };
 
 class Server_Puppet : public puppet::Puppet_Server
@@ -23,7 +27,8 @@ private:
   // FIXME: add lhs state for puppet scripts
   Phat_Server phat_;
 public:
-  Server_Puppet(int puppet_port, int phat_port) : Puppet_Server(puppet_port), phat_(phat_port) {}
+  Server_Puppet(int puppet_port, int phat_port, int paxos_port, int pm) : 
+    Puppet_Server(puppet_port), phat_(phat_port,paxos_port, pm) {}
 
   virtual void dispatch(String tag, Json args, tamer::event<> ev);
 
@@ -44,7 +49,12 @@ void Server_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 
 tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
 {
-  // FIXME: NYI
+  tvars {
+    Json r;
+  }
+  INFO() << "in Server_Puppet elect";
+  twait { phat_.electme(make_event(r)); }
+  INFO() << "returned: " << r;
 
   ev();
 }
@@ -59,14 +69,17 @@ int main(int argc, char **argv)
   while(Clp_Next(clp)!=Clp_Done) {
     if(Clp_IsLong(clp, "phat-port")) {
       phat_port = clp->val.i;
-    }
-    else if(Clp_IsLong(clp, "puppet-port")) {
+    } else if(Clp_IsLong(clp, "puppet-port")) {
       puppet_port = clp->val.i;
-    }
+    } else if (Clp_IsLong(clp,"paxos-port"))
+      paxos_port = clp->val.i;
+    else if (Clp_IsLong(clp,"paxos-master"))
+      paxos_master = clp->val.i;
+
   }
 
   INFO() << "Server Driver up at PID " << getpid();
-  Server_Puppet puppet_server(puppet_port, phat_port);
+  Server_Puppet puppet_server(puppet_port, phat_port, paxos_port, paxos_master);
 
   tamer::loop();
   tamer::cleanup();
