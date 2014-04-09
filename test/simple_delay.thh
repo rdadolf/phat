@@ -8,6 +8,7 @@ tamed void run()
   B.spawn("./server_driver -P 15807");
   sleep(1);
   twait { B.connect("localhost",15807,make_event()); }
+  twait { B.send_electme(make_event()); }
 
   A.spawn("./client_driver -P 15808");
   sleep(1);

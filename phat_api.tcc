@@ -69,9 +69,11 @@ tamed void Phat_Interface::get_master(tamer::event<> ev)
 // FIXME: validate
     // FIXME: validate
     if( reply_master.content()[0].as_s()=="ACK" ) {
+      INFO() << "master_found!";
       master_known = true;
       // master_ data already set.
     } else if( reply_master.content()[0].as_s()=="NACK" ) {
+      INFO() << "master not found";
       master_known = false;
       if( reply_master.content()[1].as_s()=="NOT_MASTER" ) {
         if( reply_master.content()[2].is_s() ) {

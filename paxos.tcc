@@ -269,6 +269,8 @@ tamed void Paxos_Acceptor::decided(modcomm_fd& mpfd, RPC_Msg& req,Json v) {
     if (v[0].as_s() == "master") {
         assert(v[1].is_i());
         me_->master_ = v[1].as_i();
+        if (me_->master_ == me_->paxos_port_) // FIXME: should be a better way to do this
+            me_->i_am_master_ = true;
     // } else (v[0].as_s() == "file") {
     }}
     res = RPC_Msg(Json::array(DECIDED,"ACK"),req);

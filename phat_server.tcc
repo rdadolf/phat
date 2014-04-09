@@ -187,6 +187,8 @@ tamed void Phat_Server::elect_me(tamer::event<Json> ev) {
   INFO() << "Elect: "<< paxos_port_;
   twait {proposer_->run_instance(v,make_event(*ev.result_pointer())); }
   INFO() << "Master is now: " << master_;
+  if (master_ == paxos_port_)
+    INFO() << "I am master? : "<< i_am_master_;
   ev.unblock();
 }
 
