@@ -1,0 +1,54 @@
+#ifndef _network_hh_
+#define _network_hh_
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include "log.hh"
+#include "mpfd.hh"
+#include "json.hh"
+
+typedef struct {
+  struct in_addr ip;
+  int port;
+} Server_t;
+
+const String& server_string(const Server_t& server);
+
+// One overloaded interface for ip lookup.
+// This way, we can take whatever is in Json and just use it.
+bool get_ip_address( const char *hostname, struct in_addr &host );
+bool get_ip_address( uint32_t ip_addr, struct in_addr &host );
+
+////////////////////////////////////////////////////////////////////////////////
+// modcomm: A modifiable communications wrapper
+//
+// The basic idea here is to enable selective delay and drop behavior for 
+// testing failure conditions. We do this by wrapping all of the MPFD send/recv
+// commands in a function which retrieves the message, then either holds it for
+// a parameterized delay or tosses it with some probability.
+
+
+class modcomm_fd {
+private:
+  static unsigned int delay_;
+  msgpack_fd mpfd_;
+public:
+  static void set_delay(unsigned int delay) {
+    INFO() << "Modcomm delay set to " << delay;
+    delay_ = delay;
+  }
+
+  void initialize( tamer::fd cfd );
+  tamed void call( Json msg, tamer::event<Json> ev );
+  tamed void write( Json msg, tamer::event<> ev );
+  tamed void read_request( tamer::event<Json> ev );
+
+  bool operator!() { return !((bool)mpfd_); }
+  operator bool() { return (bool)mpfd_; }
+};
+
+#endif

@@ -35,14 +35,16 @@ public:
   tamed void service_electme(Json args, tamer::event<> ev);
 };
 
-
+// Called by the puppet server class's internals.
+// Extensible dispatch.
 void Server_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 {
   puppet::Puppet_Server::dispatch(tag, args, ev);
 
-  if(tag=="elect_me")
+  if(tag=="puppet_electme")
     service_electme(args, ev);
-  // No warning about unknown messages, to allow extensibility via inheritance.
+
+  INFO() << "Client dispatch finished";
 }
 
 tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
@@ -51,7 +53,7 @@ tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
     Json r;
   }
   INFO() << "in Server_Puppet elect";
-  twait { phat_.elect_me(make_event(r)); }
+  twait { phat_.electme(make_event(r)); }
   INFO() << "returned: " << r;
 
   ev();

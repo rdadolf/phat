@@ -40,7 +40,8 @@ public:
 class LogInstance {
 private:
   String buffer_;
-  String mode_, file_, line_;
+  const char *mode_, *file_;
+  int line_;
 public:
   LogInstance(const char *mode, const char *file, const int line) : mode_(mode), file_(file), line_(line) {};
   LogInstance& operator<< (String rhs) {
@@ -61,22 +62,13 @@ public:
   }
   ~LogInstance() {
     struct timeval tv;
-    int64_t time_int;
+    char prefix[60];
     String final_buffer;
 
     gettimeofday(&tv, 0);
-    time_int = tv.tv_sec*1000000 + tv.tv_usec;
-    
-    final_buffer += String(time_int);
-    final_buffer += String(" [");
-    final_buffer += String(getpid());
-    final_buffer += String(":");
-    final_buffer += file_;
-    final_buffer += ":";
-    final_buffer += line_;
-    final_buffer += "] ";
-    final_buffer += mode_;
-    final_buffer += ": ";
+    snprintf(prefix, 60, "%ld.%06ld [%d:%s:%d] %s: ",
+      tv.tv_sec, tv.tv_usec, getpid(), file_, line_, mode_);
+    final_buffer += prefix;
     final_buffer += buffer_;
     final_buffer += "\n";
     LogState::get() << final_buffer;

@@ -1,6 +1,5 @@
 #include "string.hh"
 #include "json.hh"
-#include "mpfd.hh"
 #include "network.hh"
 
 namespace phat {
@@ -18,7 +17,7 @@ class Phat_Interface
 private:
   std::vector<Server_t> replicas_;
   Server_t master_;
-  msgpack_fd master_fd_;
+  modcomm_fd master_fd_;
   int64_t epoch_number_;
   static const int DEFAULT_PHAT_PORT_ = 15810; // default, not guaranteed.
 

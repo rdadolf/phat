@@ -21,7 +21,7 @@ tamed void Paxos_Proposer::proposer_init (tamer::event<> done) {
 }
 
 tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd& cfd, 
-                        msgpack_fd& mpfd, struct in_addr& hostip,tamer::event<> done) {
+                        modcomm_fd& mpfd, struct in_addr& hostip,tamer::event<> done) {
 
     tvars {
         int s = 100;
@@ -195,7 +195,7 @@ tamed void Paxos_Acceptor::acceptor_init(tamer::event<> done) {
 
 tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
     tvars {
-        msgpack_fd mpfd(cfd);
+        modcomm_fd mpfd(cfd);
         RPC_Msg res,req;
         int n;
         Json v;
@@ -235,7 +235,7 @@ tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
     cfd.close();
 }
 
-tamed void Paxos_Acceptor::prepare(msgpack_fd& mpfd, RPC_Msg& req,int n) {
+tamed void Paxos_Acceptor::prepare(modcomm_fd& mpfd, RPC_Msg& req,int n) {
     tvars {
         RPC_Msg res;
     }
@@ -245,7 +245,7 @@ tamed void Paxos_Acceptor::prepare(msgpack_fd& mpfd, RPC_Msg& req,int n) {
     mpfd.write(res);
 }
 
-tamed void Paxos_Acceptor::accept(msgpack_fd& mpfd, RPC_Msg& req, int n, Json v) {
+tamed void Paxos_Acceptor::accept(modcomm_fd& mpfd, RPC_Msg& req, int n, Json v) {
     tvars {
         RPC_Msg res;
     }
@@ -259,7 +259,7 @@ tamed void Paxos_Acceptor::accept(msgpack_fd& mpfd, RPC_Msg& req, int n, Json v)
     mpfd.write(res);
 }
 
-tamed void Paxos_Acceptor::decided(msgpack_fd& mpfd, RPC_Msg& req,Json v) {
+tamed void Paxos_Acceptor::decided(modcomm_fd& mpfd, RPC_Msg& req,Json v) {
     tvars { 
         RPC_Msg res; 
     }
