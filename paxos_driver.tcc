@@ -30,6 +30,8 @@ int main(int argc, char const *argv[]) {
         port = clp->val.i;
       } else if(Clp_IsLong(clp, "number")) {
         n = clp->val.i;
+      } else if (Clp_IsLong(clp,"port_start")) {
+        port_start = clp->val.i;
       }
     }
 

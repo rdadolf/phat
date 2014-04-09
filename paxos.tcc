@@ -44,7 +44,7 @@ tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd
 
     twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
     while (!cfd) {
-        INFO() << "delaying: " << s;
+        INFO() << "delaying to connect to " << port << ": " << s;
         twait { tamer::at_delay_msec(s,make_event()); }
         twait { tamer::tcp_connect(hostip, port, make_event(cfd)); }
         if (s <= 10000)
