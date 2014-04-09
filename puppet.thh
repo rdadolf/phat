@@ -37,6 +37,7 @@ public:
   tamed void send_print(String name, tamer::event<> ev);
   tamed void send_die(tamer::event<> ev);
   tamed void send_sleep(int seconds, tamer::event<> ev);
+  tamed void send_delay(int mseconds, tamer::event<> ev);
 
   // Client operations
   tamed void send_getroot(String lhs, tamer::event<> ev);
@@ -49,6 +50,9 @@ public:
   tamed void send_stat(String lhs, String path, tamer::event<> ev);
   tamed void send_remove(String lhs, String path, tamer::event<> ev);
   // FIXME: the rest...
+
+  // Server operations
+  tamed void send_electme(tamer::event<> ev);
 };
 
 
@@ -114,14 +118,12 @@ void Puppet::disconnect()
 
 // Basic operations
 
-tamed void Puppet::send_print(String name, tamer::event<> ev)
+tamed void Puppet::send_print(String msg, tamer::event<> ev)
 {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("print"),name));
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_print"),msg));
     RPC_Msg reply;
   }
-
-  INFO() << "Sending puppet command: print";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
 
@@ -132,21 +134,50 @@ tamed void Puppet::send_print(String name, tamer::event<> ev)
 
 tamed void Puppet::send_die(tamer::event<> ev){
   tvars {
-    Json msg;
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_die")));
+    RPC_Msg reply;
   }
 
-  INFO() << "Sending puppet command: die";
-
-  // FIXME
+  twait { mpfd_.call(request, make_event(reply.json())); }
+  // We don't expect this to give a proper reply.
+  // Instead, we expect the connection to close abruptly.
+  if( mpfd_ ) {
+    WARN() << "Connection still open after die message. Response was: " << reply.json();
+  }
 
   ev();
 }
 
 tamed void Puppet::send_sleep(int seconds, tamer::event<> ev)
 {
-  INFO() << "Sending puppet command: sleep";
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_sleep"),seconds));
+    RPC_Msg reply;
+  }
 
-  // FIXME
+  twait { mpfd_.call(request, make_event(reply.json())); }
+
+  // FIXME: validate
+  // FIXME: assert not NACK
+
+  ev();
+}
+
+tamed void Puppet::send_delay(int mseconds, tamer::event<> ev)
+{
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_delay"),mseconds));
+    RPC_Msg reply;
+  }
+
+  twait { mpfd_.call(request, make_event(reply.json())); }
+  if( !mpfd_ ) {
+    WARN() << "Puppet client hung up unexpectedly";
+    ev();
+  }
+
+  // FIXME: validate
+  // FIXME: assert not NACK
 
   ev();
 }
@@ -156,17 +187,15 @@ tamed void Puppet::send_sleep(int seconds, tamer::event<> ev)
 tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
 {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("getroot"))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_getroot"))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() << "Sending puppet command: getroot";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
   if( !mpfd_ ) {
     WARN() << "Puppet client hung up unexpectedly";
     ev();
   }
-  INFO() << "Received: " << reply.json();
 
   // FIXME: validate
   // FIXME: assert not NACK
@@ -176,93 +205,99 @@ tamed void Puppet::send_getroot(String lhs, tamer::event<> ev)
 
 tamed void Puppet::send_open(String lhs, String root, String subpath, tamer::event<> ev)
 {
-  INFO() << "Sending puppet command: open";
 
   ev();
 }
 
 tamed void Puppet::send_mkfile(String lhs, String path, String data, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("mkfile"),Json::array(path,data))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_mkfile"),Json::array(path,data))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: mkfile";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_mkdir(String lhs, String path, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("mkdir"),Json::array(path))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_mkdir"),Json::array(path))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: mkdir";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_getcontents(String lhs, String path, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("getcontents"),Json::array(path))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_getcontents"),Json::array(path))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: getcontents";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_putcontents(String lhs, String path,String data, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("putcontents"),Json::array(path,data))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_putcontents"),Json::array(path,data))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: putcontents";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_readdir(String lhs, String path, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("readdir"),Json::array(path))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_readdir"),Json::array(path))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: readdir";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_stat(String lhs, String path, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("stat"),Json::array(path))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_stat"),Json::array(path))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: stat";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
   ev();
 }
 tamed void Puppet::send_remove(String lhs, String path, tamer::event<> ev) {
   tvars {
-    RPC_Msg request = RPC_Msg(Json::array(String("remove"),Json::array(path))); // FIXME: lhs
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_remove"),Json::array(path))); // FIXME: lhs
     RPC_Msg reply;
   }
-  INFO() <<  "Sending puppet command: remove";
 
   twait { mpfd_.call(request,make_event(reply.json())); }
-  INFO() << "Received: " << reply.json();
   
+  ev();
+}
+
+// Server Operations
+
+tamed void Puppet::send_electme(tamer::event<> ev)
+{
+  tvars {
+    RPC_Msg request = RPC_Msg(Json::array(String("puppet_electme")));
+    RPC_Msg reply;
+  }
+
+  twait { mpfd_.call(request, make_event(reply.json())); }
+  if( !mpfd_ ) {
+    WARN() << "Puppet client hung up unexpectedly";
+    ev();
+  }
+
+  // FIXME: validate
+  // FIXME: assert not NACK
+
   ev();
 }
 
@@ -289,6 +324,7 @@ public:
   tamed void service_print(Json args, tamer::event<> ev);
   tamed void service_die(Json args, tamer::event<> ev);
   tamed void service_sleep(Json args, tamer::event<> ev);
+  tamed void service_delay(Json args, tamer::event<> ev);
 };
 
 Puppet_Server::Puppet_Server(int port)
@@ -331,39 +367,32 @@ tamed void Puppet_Server::read_and_dispatch()
       INFO() << "Client connection closed";
       break;
     }
-    INFO() << "Puppet received RPC Msg: " << request.json();
     if(request.validate() ) {
       reply = RPC_Msg(Json::array(String("ACK")),request);
     } else {
       reply = RPC_Msg(Json::array(String("NACK")),request);
       continue; // Don't dispatch on invalid RPCs.
     }
-    // FIXME:
-    // This is a little odd. We write the reply *first*, before the
-    // action has been taken. This is because some of the operations
-    // do not return or block. We want to be able to make progress
-    // in the puppet server. There is probably a better way to do this.
-    INFO() << "Puppet server sending reply";
-    client_mpfd_.write(reply);
     tag = request.content()[0].as_s();
-    INFO() << "Dispatching: " << tag;
     twait { dispatch(tag, request.content(), make_event()); }
+    // Acknowledge completion.
+    twait { client_mpfd_.write(reply, make_event()); }
   }
   //client_mpfd_.close(); // FIXME: Do I need this? This loop will only break when the connection has been closed on the other end.
 }
 
 void Puppet_Server::dispatch(String tag, Json args, tamer::event<> ev)
 {
-  if(tag=="print") {
+  if(tag=="puppet_print") {
     service_print(args, ev);
-  } else if(tag=="sleep") {
+  } else if(tag=="puppet_sleep") {
     service_sleep(args, ev);
-  } else if(tag=="die") {
+  } else if(tag=="puppet_die") {
     service_die(args, ev);
+  } else if(tag=="puppet_delay") {
+    service_delay(args, ev);
   }
 
-  INFO() << "Puppet dispatch finished.";
-  // No warning about unknown messages, to allow extensibility via inheritance
   // Child class will call its own dispatch after this.
 }
 
@@ -391,11 +420,32 @@ tamed void Puppet_Server::service_sleep(Json args, tamer::event<> ev)
   if( !args[1].is_i() ) {
     return;
   }
+  if( (i<0) || (i>1000) ) {
+    WARN() << "Ridiculous sleep time requested. Corrupted message? " << args;
+    return;
+  }
+
   i = args[1].as_i();
-  assert((i>0) && (i<1000) && "Ridiculous sleep time requested. Corruption?\n");
   INFO() << "Puppet sleeping.";
 
   twait { tamer::at_delay(i,make_event()); }
+  // FIXME: Do I need a blocking sleep here?
+
+  ev();
+}
+
+tamed void Puppet_Server::service_delay(Json args, tamer::event<> ev)
+{
+  tvars {
+    unsigned int i;
+  }
+  if( !args[1].is_i() || args[1].as_i()<0 ) {
+    WARN() << "Invalid delay message format. Corrupted message? " << args;
+    return;
+  }
+  i = args[1].as_i();
+
+  modcomm_fd::set_delay(i);
 
   ev();
 }

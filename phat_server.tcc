@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "mpfd.hh"
 #include "json.hh"
 #include <netdb.h>
 #include "clp.h"
@@ -71,14 +70,13 @@ tamed void Phat_Server::handle_new_connections(int port)
 tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
 {
   tvars {
-    msgpack_fd mpfd;
+    modcomm_fd mpfd;
     RPC_Msg request, reply;
   }
 
   mpfd.initialize(client_fd);
   while(mpfd) {
     twait{ mpfd.read_request(tamer::make_event(request.json())); }
-    INFO() << "Received RPC: " << request.json();
     if(!mpfd)
       break;
     if( request.validate() ) {
@@ -109,9 +107,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     } else {
       reply = RPC_Msg( Json::array(String("NACK")), request );
     }
-    INFO() << "Writing reply: " << reply.json();
-    mpfd.write(reply);
-    INFO() << "Reply written.";
+    twait { mpfd.write(reply, make_event()); }
   }
 }
 

@@ -47,31 +47,29 @@ void Client_Puppet::dispatch(String tag, Json args, tamer::event<> ev)
 {
   puppet::Puppet_Server::dispatch(tag, args, ev);
 
-  if(tag=="getroot")
+  if(tag=="puppet_getroot")
     service_getroot(args, ev);
-  else if(tag=="open")
+  else if(tag=="puppet_open")
     service_open(args, ev);
-  else if(tag=="mkfile")
+  else if(tag=="puppet_mkfile")
     service_mkfile(args, ev);
-  else if(tag=="mkdir")
+  else if(tag=="puppet_mkdir")
     service_mkdir(args, ev);
-  else if(tag=="getcontents")
+  else if(tag=="puppet_getcontents")
     service_getcontents(args, ev);
-  else if(tag=="putcontents")
+  else if(tag=="puppet_putcontents")
     service_putcontents(args, ev);
-  else if(tag=="readdir")
+  else if(tag=="puppet_readdir")
     service_readdir(args, ev);
-  else if(tag=="stat")
+  else if(tag=="puppet_stat")
     service_stat(args, ev);
-  else if(tag=="flock")
+  else if(tag=="puppet_flock")
     service_flock(args, ev);
-  else if(tag=="unlock")
+  else if(tag=="puppet_unlock")
     service_unlock(args, ev);
-  else if(tag=="remove")
+  else if(tag=="puppet_remove")
     service_remove(args, ev);
 
-  INFO() << "Client dispatch finished";
-  // No warning about unknown messages, to allow extensibility via inheritance.
 }
 
 tamed void Client_Puppet::service_getroot(Json args, tamer::event<> ev )
@@ -81,7 +79,6 @@ tamed void Client_Puppet::service_getroot(Json args, tamer::event<> ev )
   }
 
   INFO() << "Client servicing getroot request";
-  INFO() << "HERE";
 
   twait{ phat_.getroot(make_event(h)); }
 

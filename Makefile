@@ -1,7 +1,7 @@
 .PHONY: default test
 
-CPP_TEMPS= client_driver.cc paxos.cc paxos_test.cc phat_api.cc phat_server.cc puppet.cc server_driver.cc
-HPP_TEMPS= paxos.hh phat_api.hh phat_server.hh puppet.hh
+CPP_TEMPS= client_driver.cc paxos.cc paxos_test.cc phat_api.cc phat_server.cc puppet.cc server_driver.cc network.cc
+HPP_TEMPS= paxos.hh phat_api.hh phat_server.hh puppet.hh network.hh
 .SECONDARY:$(CPP_TEMPS) $(HPP_TEMPS)
 
 default: server_driver client_driver puppet
@@ -69,6 +69,8 @@ apitest: clean_puppet
 	make TEST_SCRIPT=test/apitest.hh
 paxos_test: clean_puppet
 	make TEST_SCRIPT=test/paxos_test.hh
+simple_delay: clean_puppet
+	make TEST_SCRIPT=test/simple_delay.hh
 
 # Build rules
 client_driver.o: client_driver.cc $(CLIENT_HDR)
