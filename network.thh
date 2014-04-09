@@ -37,6 +37,11 @@ private:
   static unsigned int delay_;
   msgpack_fd mpfd_;
 public:
+  modcomm_fd(){}
+  modcomm_fd(tamer::fd cfd) {
+    initialize(cfd);
+  }
+
   static void set_delay(unsigned int delay) {
     INFO() << "Modcomm delay set to " << delay;
     delay_ = delay;
@@ -44,11 +49,16 @@ public:
 
   void initialize( tamer::fd cfd );
   tamed void call( Json msg, tamer::event<Json> ev );
+  inline void write(Json msg);
   tamed void write( Json msg, tamer::event<> ev );
   tamed void read_request( tamer::event<Json> ev );
 
   bool operator!() { return !((bool)mpfd_); }
   operator bool() { return (bool)mpfd_; }
 };
+
+inline void modcomm_fd::write(Json msg) {
+  mpfd_.write(msg);
+}
 
 #endif

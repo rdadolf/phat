@@ -53,7 +53,7 @@ tamed void Server_Puppet::service_electme(Json args, tamer::event<> ev)
     Json r;
   }
   INFO() << "in Server_Puppet elect";
-  twait { phat_.electme(make_event(r)); }
+  twait { phat_.elect_me(make_event(r)); }
   INFO() << "returned: " << r;
 
   ev();

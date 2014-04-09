@@ -133,14 +133,14 @@ tamed void Puppet::send_print(String msg, tamer::event<> ev)
   ev();
 }
 
-tamed void Puppet::send_elect_me(tamer::event<> ev) {
-  tvars {
-    RPC_Msg req,res;
-  }
-  req = RPC_Msg(Json::array("elect_me"));
-  twait { mpfd_.call(req,make_event(res.json())); }
-  ev();
-}
+// tamed void Puppet::send_elect_me(tamer::event<> ev) {
+//   tvars {
+//     RPC_Msg req,res;
+//   }
+//   req = RPC_Msg(Json::array("elect_me"));
+//   twait { mpfd_.call(req,make_event(res.json())); }
+//   ev();
+// }
 
 tamed void Puppet::send_die(tamer::event<> ev){
   tvars {
@@ -369,6 +369,7 @@ tamed void Puppet_Server::read_and_dispatch()
   tvars {
     RPC_Msg request, reply;
     String tag;
+    tamer::event<> done;
   }
 
   while(client_mpfd_) {
@@ -386,7 +387,7 @@ tamed void Puppet_Server::read_and_dispatch()
     tag = request.content()[0].as_s();
     twait { dispatch(tag, request.content(), make_event()); }
     // Acknowledge completion.
-    twait { client_mpfd_.write(reply, make_event()); }
+    twait { client_mpfd_.write(reply, done); }
   }
   //client_mpfd_.close(); // FIXME: Do I need this? This loop will only break when the connection has been closed on the other end.
 }

@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include "paxos.hh"
+#include "network.hh"
 #include "phat_server.hh"
 using namespace paxos;
 

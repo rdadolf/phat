@@ -80,7 +80,7 @@ client_driver: client_driver.o phat_api.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) 
 
 server_driver.o: server_driver.cc $(SERVER_HDR)
 phat_server.o: phat_server.cc $(SERVER_HDR)
-paxos.o: paxos.cc paxos.hh $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
+paxos.o: paxos.cc paxos.hh network.hh $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
 server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
 	$(CXX) server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
 
