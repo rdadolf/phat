@@ -388,6 +388,7 @@ tamed void Puppet_Server::read_and_dispatch()
     twait { dispatch(tag, request.content(), make_event()); }
     // Acknowledge completion.
     twait { client_mpfd_.write(reply, done); }
+    // ASK: why can't i use make_event?
   }
   //client_mpfd_.close(); // FIXME: Do I need this? This loop will only break when the connection has been closed on the other end.
 }

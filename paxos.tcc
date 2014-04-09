@@ -78,30 +78,29 @@ tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
         std::vector<int>::size_type i;
         Json v;
         RPC_Msg req;
-        tamer::rendezvous<bool> r1;
-        tamer::rendezvous<bool> r2;
+        tamer::rendezvous<bool> r;
         bool to;
     }
     set_vc(_v);
     INFO() << "starting instance";;
 start:
     
-    propose(n,v,r1.make_event(false));
-    tamer::at_delay_sec(4,r1.make_event(true));
-    twait(r1,to);
+    propose(n,v,r.make_event(false));
+    tamer::at_delay_sec(4,r.make_event(true));
+    twait(r,to);
     if (to) { // timeout happened
         INFO() << "restarting after propose";;
         goto start;
     }
-
+    r.clear();
     if (v_o.empty()) {
         v_o = v_c;
         assert(!v_c.empty());
     }
 
-    accept(n,r2.make_event(false));
-    tamer::at_delay_sec(4,r2.make_event(true));
-    twait(r2,to);
+    accept(n,r.make_event(false));
+    tamer::at_delay_sec(4,r.make_event(true));
+    twait(r,to);
     if (to) {
         INFO() << "restarting after accept";;
         goto start;
