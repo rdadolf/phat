@@ -9,7 +9,7 @@ An implementation of the Chubby lock service protocol in MPRPC. Named Joan.
     git submodule init
     git submodule update
     cd mprpc
-    ./bootstrap
+    ./bootstrap.sh
     ./configure CXX='g++ -std=gnu++0x'
     make
     cd ..
