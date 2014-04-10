@@ -37,7 +37,6 @@ CXX=g++ -std=gnu++0x
 endif
 ifeq ($(OS),OSX_POSTMAV)
 CXX=g++ -std=c++11
-#CXX=g++ -std=c++11 -stdlib=libc++
 endif
 CXXFLAGS=-Wall -g -O2 $(DEBUG) -I. -Imprpc -Imprpc/tamer -Imprpc/.deps -include config.h
 LIBTAMER=mprpc/tamer/tamer/.libs/libtamer.a
@@ -80,7 +79,7 @@ client_driver: client_driver.o phat_api.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) 
 
 server_driver.o: server_driver.cc $(SERVER_HDR)
 phat_server.o: phat_server.cc $(SERVER_HDR)
-paxos.o: paxos.cc paxos.hh network.hh $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
+paxos.o: paxos.cc paxos.hh rpc_msg.hh network.hh $(MPRPC_HDR) $(MPRPC_OBJ) $(MPRPC_SRC)
 server_driver: server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) $(MPRPC_SRC) $(MPRPC_HDR)
 	$(CXX) server_driver.o phat_server.o paxos.o $(UTIL_OBJ) $(MPRPC_OBJ) -o server_driver $(LDFLAGS)
 

@@ -5,10 +5,9 @@
 
 class RPC_Msg { 
   private:
-    static const int MESSAGE_ = 1;
-    static const int REPLY_ = -1;
     Json data_;
   public:
+    enum {MESSAGE_ = 1, REPLY_ = -1}; 
     RPC_Msg() {
       data_ = Json::array(MESSAGE_,Json::null,Json::null);
     }

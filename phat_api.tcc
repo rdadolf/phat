@@ -165,9 +165,9 @@ tamed void Phat_Interface::mkdir(Handle root, const String subpath, tamer::event
   ev(Handle()); // FIXME: NYI
 }
 
-tamed void Phat_Interface::getcontents(Handle h, tamer::event<const char *> ev)
+tamed void Phat_Interface::getcontents(Handle h, tamer::event<String> ev)
 {
-  ev((const char *)NULL); // FIXME: NYI
+  ev(String()); // FIXME: NYI
 }
 
 tamed void Phat_Interface::putcontents(Handle h, const char *data, tamer::event<> ev)
