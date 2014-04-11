@@ -42,7 +42,6 @@ void Phat_Server::fs_init() {
 tamed void Phat_Server::run_master_server()
 {
   INFO() << "Running phat master server";
-  i_am_master_ = false;
   fs_init();
   twait { get_paxos_group(make_event()); }
   handle_new_connections(listen_port_);
@@ -186,7 +185,6 @@ tamed void Phat_Server::elect_me(tamer::event<Json> ev) {
   v = Json::array("master",paxos_port_);
   INFO() << "Elect: "<< paxos_port_;
   twait {proposer_->run_instance(v,make_event(*ev.result_pointer())); }
-  INFO() << "Master is now: " << master_;
   ev.unblock();
 }
 
@@ -335,7 +333,7 @@ Json Phat_Server::remove(Json args) {
 Json Phat_Server::get_master(Json args)
 {
   INFO() << "get_master service routine called";
-  if( i_am_master_ ) {
+  if( i_am_master() ) {
     return Json::array(String("ACK"));
   } else {
     // FIXME: Report real master.

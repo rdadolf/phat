@@ -4,6 +4,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include "mpfd.hh"
 #include "rpc_msg.hh"
 #include "log.hh"
@@ -16,6 +17,9 @@
 #define DECIDED         3   // decided message
 #define PREPARED        4   // prepared message
 #define ACCEPTED        5   // accepted message
+
+// mmap file region for persistance
+#define MAP_SIZE        1024
 
 namespace phat {
     class Phat_Server;
@@ -39,6 +43,7 @@ public:
 
     // persist to disk
     int fd_;
+    char* mapd;
 
 
     Paxos_Proposer(int uid, const char* host,std::vector<int> ps,int f_i) :
@@ -52,13 +57,13 @@ public:
         String fn(uid_);
         fn += "_proposer_persist";
         fd_ = open(fn.c_str(),O_RDWR|O_CREAT);
-        int sz = lseek(fd_,0,SEEK_END);
-        lseek(fd_,0,SEEK_SET);
-        char* buf = (char*) malloc(sizeof(char) * (sz + 1));
-        read(fd_,buf,sz);
-        buf[sz] = 0;
-        Json tmp = Json::parse(buf);
-        delete buf;
+        ftruncate(fd_,MAP_SIZE);
+        mapd = (char*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0); //FIXME: AMOUNT? 
+        String s;
+        char* ptr = mapd;
+        for (; *ptr; ++ptr)
+            s += *ptr;
+        Json tmp = Json::parse(s);
         if (tmp["n_p"] != Json::null) {
             assert(tmp["n_p"].is_i());
             n_p = tmp["n_p"].as_i();
@@ -73,6 +78,7 @@ public:
         cfd.clear();
         mpfd.clear();
         res.clear();
+        munmap(mapd, MAP_SIZE);
         close(fd_);
         String fn(uid_);
         fn += "_proposer_persist";
@@ -82,18 +88,16 @@ public:
         v_c = v;
     }
     void persist() {
-        Json tmp = Json::make_object();
-        tmp.set("n_p", n_p);
-        lseek(fd_,0,SEEK_SET);
+        Json tmp = Json::object("n_p",n_p);
         String s = tmp.unparse();
-        write(fd_,s.c_str(),s.length());
-        ftruncate(fd_,s.length());
+        memset(mapd,0,MAP_SIZE);
+        memcpy(mapd,s.c_str(),s.length());
     }
 
     tamed void proposer_init(tamer::event<> done);
     tamed void client_init(const char* hostname, int port, tamer::fd& cfd, 
                             modcomm_fd& mpfd, struct in_addr& hostip,tamer::event<> done);
-    tamed void send_to_all(RPC_Msg& req,tamer::event<> done);
+    tamed void send_to_all(RPC_Msg& req);
     tamed void run_instance(Json v,tamer::event<Json> done);
     tamed void propose(int n, Json v,tamer::event<> done);
     tamed void accept(int n , tamer::event<> done);
@@ -112,12 +116,13 @@ public:
 
     // persist to disk
     int fd_;
+    char* mapd;
 
 
     Paxos_Acceptor() : 
         me_(NULL),
         port(18029),
-        v_a (Json::null), 
+        v_a (Json::make_array()), 
         n_l(0),n_a(0) {
 
         persist_init();
@@ -125,13 +130,14 @@ public:
     Paxos_Acceptor(phat::Phat_Server* me,int p) : 
         me_(me),
         port(p),
-        v_a (Json::null), 
+        v_a (Json::make_array()), 
         n_l(0),n_a(0) {
 
         persist_init();
     }
 
     ~Paxos_Acceptor() {
+        munmap(mapd, MAP_SIZE);
         close(fd_);
         String fn(port);
         fn += "_acceptor_persist";
@@ -142,13 +148,13 @@ public:
         String fn(port);
         fn += "_acceptor_persist";
         fd_ = open(fn.c_str(),O_RDWR|O_CREAT);
-        int sz = lseek(fd_,0,SEEK_END);
-        lseek(fd_,0,SEEK_SET);
-        char* buf = (char*) malloc(sizeof(char) * (sz + 1));
-        read(fd_,buf,sz);
-        buf[sz] = 0;
-        Json tmp = Json::parse(buf);
-        delete buf;
+        ftruncate(fd_,MAP_SIZE);
+        mapd = (char*) mmap(NULL, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0); //FIXME: AMOUNT? 
+        String s;
+        char* ptr = mapd;
+        for (; *ptr; ++ptr)
+            s += *ptr;
+        Json tmp = Json::parse(s);
         if (tmp["n_a"] != Json::null && tmp["n_l"] != Json::null
             && tmp["v_a"] != Json::null) {
             assert(tmp["n_a"].is_i() && tmp["n_l"].is_i());
@@ -163,14 +169,14 @@ public:
     }
 
     void persist() {
-        Json tmp = Json::make_object();
-        tmp.set("n_a", n_a);
-        tmp.set("n_l", n_l);
-        tmp.set("v_a", v_a);
-        lseek(fd_,0,SEEK_SET);
+        Json tmp = Json::object(
+            "n_a", n_a,
+            "n_l", n_l,
+            "v_a", v_a
+        );
+        memset(mapd,0,MAP_SIZE);
         String s = tmp.unparse();
-        write(fd_,s.c_str(),s.length());
-        ftruncate(fd_,s.length());
+        memcpy(mapd,s.c_str(),s.length());
     }
 
     tamed void acceptor_init(tamer::event<> done);

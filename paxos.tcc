@@ -57,7 +57,7 @@ tamed void Paxos_Proposer::client_init(const char* hostname, int port, tamer::fd
     done();
 }
 
-tamed void Paxos_Proposer::send_to_all(RPC_Msg& req,tamer::event<> done){
+tamed void Paxos_Proposer::send_to_all(RPC_Msg& req){
     tvars {
         std::vector<int>::size_type i;
         tamer::rendezvous<int> r;
@@ -65,11 +65,11 @@ tamed void Paxos_Proposer::send_to_all(RPC_Msg& req,tamer::event<> done){
     }
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i].json()));
-
+/*
     for (i = 0; i < (unsigned)(f + 1); ++i)
         twait(r,ret);
     
-    done();
+    done();*/
 }
 
 tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
@@ -107,7 +107,7 @@ start:
     }
     
     req = RPC_Msg(Json::array(DECIDED,n_p,v_o));
-    twait { send_to_all(req,make_event()); }
+    send_to_all(req);
     INFO() << "decided";;
 
     *done.result_pointer() = v_o;
@@ -268,10 +268,10 @@ tamed void Paxos_Acceptor::decided(modcomm_fd& mpfd, RPC_Msg& req,Json v) {
     if (v[0].as_s() == "master") {
         assert(v[1].is_i());
         me_->master_ = v[1].as_i();
-        if (me_->master_ == me_->paxos_port_) // FIXME: should be a better way to do this
-            me_->i_am_master_ = true;
     // } else (v[0].as_s() == "file") {
     }}
+    INFO() << "I, "<< me_->paxos_port_ << ", think I am master: " << me_->i_am_master();
+    INFO () << "master is: " << me_->master_;
     res = RPC_Msg(Json::array(DECIDED,"ACK"),req);
     persist();
     mpfd.write(res);

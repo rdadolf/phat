@@ -10,6 +10,10 @@ tamed void run() {
     D.spawn("./server_driver -P 15809 -p 15812 -x 15902");
     sleep(1);
     twait { B.connect("localhost",15807,make_event()); }
-    twait { B.send_electme(make_event()); }
+    twait { C.connect("localhost",15808,make_event()); }
+    twait { 
+        B.send_electme(make_event());
+        C.send_electme(make_event());
+    }
     twait {tamer::at_delay(3,make_event()); }
 }

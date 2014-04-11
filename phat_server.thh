@@ -10,7 +10,6 @@ class Phat_Server
 {
 friend class paxos::Paxos_Acceptor;
 private:
-  bool i_am_master_;
   tamer::event <> elect_me_;
   typedef enum { FILE=1, DIR } Filetype_t;
   int listen_port_;
@@ -34,6 +33,10 @@ public:
   ~Phat_Server() {
     delete proposer_;
     delete acceptor_;
+  }
+
+  bool i_am_master() {
+    return master_ == paxos_port_;
   }
 
   tamed void run_master_server();
