@@ -216,7 +216,8 @@ tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
             INFO() << "proposer's epoch number is behind in acceptor";
             continue;
         }
-        
+        // heartbeat
+        me_->elect_me_.make_event(false).trigger();
         switch(req.content()[0].as_i()) {
             case PREPARE:
                 INFO() << "prepare: " << req.content();;

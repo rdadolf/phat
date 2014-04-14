@@ -1,0 +1,23 @@
+tamed void run() {
+    tvars {
+        puppet::Puppet A,B;
+        std::vector<puppet::Puppet> rs(3);
+        int i;
+        String s;
+    }
+    A.spawn("rm -f *_persist");
+    A.spawn("./paxos_driver");
+    sleep(1);
+    for (i = 0; i < 3; ++i) {
+        s = "./server_driver -P ";
+        s += String(15807 + i);
+        s += " -p ";
+        s += String(15810 + i);
+        s += " -x ";
+        s += String(15900 + i);
+        rs[i].spawn(s.c_str());
+    }
+    sleep(1);
+    twait {tamer::at_delay(5,make_event()); }
+    rs.clear();
+}

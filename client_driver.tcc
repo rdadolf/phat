@@ -115,22 +115,46 @@ tamed void Client_Puppet::service_mkdir(Json args, tamer::event<> ev)
 
 tamed void Client_Puppet::service_getcontents(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing getcontents request";
+
+  twait{ phat_.getcontents(args,make_event(h)); }
+  ev(); 
 }
 
 tamed void Client_Puppet::service_putcontents(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing putcontents request";
+
+  twait{ phat_.putcontents(args,make_event(h)); }
+  ev(); 
 }
 
 tamed void Client_Puppet::service_readdir(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing readdir request";
+
+  twait{ phat_.readdir(args,make_event(h)); }
+  ev(); 
 }
 
 tamed void Client_Puppet::service_stat(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing stat request";
+
+  twait{ phat_.stat(args,make_event(h)); }
+  ev(); 
 }
 
 tamed void Client_Puppet::service_flock(Json args, tamer::event<> ev)
@@ -145,7 +169,13 @@ tamed void Client_Puppet::service_unlock(Json args, tamer::event<> ev)
 
 tamed void Client_Puppet::service_remove(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing remove request";
+
+  twait{ phat_.remove(args,make_event(h)); }
+  ev(); 
 }
 
 ////////////////////////////////////////////////////////////////////////////////

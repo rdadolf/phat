@@ -62,14 +62,16 @@ rw: clean_puppet
 	make TEST_SCRIPT=test/rw.hh
 getroot: clean_puppet
 	make TEST_SCRIPT=test/getroot.hh
-mkfile: clean_puppet
-	make TEST_SCRIPT=test/mkfile.hh
+filecalls: clean_puppet
+	make TEST_SCRIPT=test/filecalls.hh
 apitest: clean_puppet
 	make TEST_SCRIPT=test/apitest.hh
 paxos_test: clean_puppet
 	make TEST_SCRIPT=test/paxos_test.hh
 simple_delay: clean_puppet
 	make TEST_SCRIPT=test/simple_delay.hh
+test_api: clean_puppet
+	make TEST_SCRIPT=test/test_api.hh
 
 # Build rules
 client_driver.o: client_driver.cc $(CLIENT_HDR)

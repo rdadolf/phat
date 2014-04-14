@@ -44,6 +44,7 @@ tamed void Phat_Server::run_master_server()
   INFO() << "Running phat master server";
   fs_init();
   twait { get_paxos_group(make_event()); }
+  listen_for_heartbeats();
   handle_new_connections(listen_port_);
 }
 
@@ -77,6 +78,22 @@ tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
   proposer_ = new paxos::Paxos_Proposer(this,paxos_port_,"localhost",paxi_,paxi_.size() / 2);
   twait { proposer_->proposer_init(make_event()); }
   ev();
+}
+
+tamed void Phat_Server::listen_for_heartbeats() {
+  tvars {
+    bool em;
+    Json j;
+  }
+  // an event is considered empty if nothing is waiting on it...
+  while (1) {
+    tamer::at_delay(5,elect_me_.make_event(true));
+    twait(elect_me_,em);
+    if (em) {
+      elect_me_.clear();
+      twait { elect_me(tamer::make_event(j)); }
+    }
+  }
 }
 
 tamed void Phat_Server::connect(String hostname, int port, tamer::event<msgpack_fd> ev)
@@ -153,16 +170,16 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
         reply = RPC_Msg( mkfile(request.content()[1]) , request);
       } else if( request.content()[0]=="mkdir" ) {
         reply = RPC_Msg ( mkdir(request.content()[1]) , request);
-      // } else if( request.content()[0]=="getcontents" ) {
-      //   reply = RPC_Msg( getcontents(request.content()[1]) , request);
-      // } else if( request.content()[0]=="putcontents" ) {
-      //   reply = RPC_Msg( putcontents( request.content()[1]), request);
-      // } else if( request.content()[0]=="readdir" ) {
-      //   reply = RPC_Msg( readdir(request.content()[1]), request);
-      // } else if( request.content()[0]=="stat" ) {
-      //   reply = RPC_Msg( stat(request.content()[1]), request);
-      // } else if( request.content()[0]=="remove" ) {
-      //   reply = RPC_Msg( remove(request.content()[1]), request);
+      } else if( request.content()[0]=="getcontents" ) {
+        reply = RPC_Msg( getcontents(request.content()[1]) , request);
+      } else if( request.content()[0]=="putcontents" ) {
+        reply = RPC_Msg( putcontents( request.content()[1]), request);
+      } else if( request.content()[0]=="readdir" ) {
+        reply = RPC_Msg( readdir(request.content()[1]), request);
+      } else if( request.content()[0]=="stat" ) {
+        reply = RPC_Msg( stat(request.content()[1]), request);
+      } else if( request.content()[0]=="remove" ) {
+        reply = RPC_Msg( remove(request.content()[1]), request);
       } else if( request.content()[0]=="elect_me" ) {
         twait { elect_me(make_event(res.json())); }
         reply = RPC_Msg(res.json(),request);
@@ -246,7 +263,7 @@ Json Phat_Server::mkdir(Json args) {
 }
 
 Json Phat_Server::getcontents(Json args) {
-    if (!args.size() != 1 || !args[0].is_s())
+    if (args.size() != 1 || !args[0].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
     Json path = parse_filepath(subpath);
@@ -263,7 +280,7 @@ Json Phat_Server::getcontents(Json args) {
 }
 
 Json Phat_Server::putcontents(Json args) {
-    if (!args.size() != 2 || !args[0].is_s() || !args[1].is_s())
+    if (args.size() != 2 || !args[0].is_s() || !args[1].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
     const char* data = args[1].as_s().c_str();
@@ -279,7 +296,7 @@ Json Phat_Server::putcontents(Json args) {
 }
 
 Json Phat_Server::readdir(Json args) {
-    if (!args.size() != 1 || !args[0].is_s())
+    if (args.size() != 1 || !args[0].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
     Json path = parse_filepath(subpath);
@@ -298,7 +315,7 @@ Json Phat_Server::readdir(Json args) {
 }
 
 Json Phat_Server::stat(Json args) {
-    if (!args.size() != 1 || !args[0].is_s())
+    if (args.size() != 1 || !args[0].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
     Json path = parse_filepath(subpath);
@@ -312,7 +329,7 @@ Json Phat_Server::stat(Json args) {
 }
 
 Json Phat_Server::remove(Json args) {
-    if (!args.size() != 1 || !args[0].is_s())
+    if (args.size() != 1 || !args[0].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
     Json path = parse_filepath(subpath);
@@ -321,7 +338,6 @@ Json Phat_Server::remove(Json args) {
     Json* ret = traverse_files(root,path);
     if (ret && (*ret)[name]) {
         // FIXME: check if file is open, by someone else?
-        std::cout << "here: " << name <<std::endl;
         if ((*ret)[name][0][1].as_i() == DIR && !(*ret)[name][1].empty())
             return Json::array("NACK");
         ret->unset(name);

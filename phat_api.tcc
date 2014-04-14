@@ -183,24 +183,96 @@ tamed void Phat_Interface::mkdir(Json args, tamer::event<Handle> ev)
   ev(retval); // FIXME: NYI
 }
 
-tamed void Phat_Interface::getcontents(Handle h, tamer::event<String> ev)
+tamed void Phat_Interface::getcontents(Json args, tamer::event<Handle> ev)
 {
-  ev(String()); // FIXME: NYI
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) getcontents called " << args;
+  args[0] = "getcontents";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "getcontents failed " << reply.json();
+  INFO() << "(API) getcontents returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
-tamed void Phat_Interface::putcontents(Handle h, const char *data, tamer::event<> ev)
+tamed void Phat_Interface::putcontents(Json args, tamer::event<Handle> ev)
 {
-  ev(); // FIXME: NYI
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) putcontents called " << args;
+  args[0] = "putcontents";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "putcontents failed " << reply.json();
+  INFO() << "(API) putcontents returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
-tamed void Phat_Interface::readdir(Handle h, tamer::event<String> ev)
+tamed void Phat_Interface::readdir(Json args, tamer::event<Handle> ev)
 {
-  ev(String("")); // FIXME: NYI
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) readdir called " << args;
+  args[0] = "readdir";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "readdir failed " << reply.json();
+  INFO() << "(API) readdir returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
-tamed void Phat_Interface::stat(Handle f, tamer::event<Metadata> ev)
+tamed void Phat_Interface::stat(Json args, tamer::event<Handle> ev)
 {
-  ev(Metadata()); // FIXME: NYI
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) stat called " << args;
+  args[0] = "stat";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "stat failed " << reply.json();
+  INFO() << "(API) stat returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
 tamed void Phat_Interface::flock(Handle f, Locktype lt, tamer::event<Sequencer> ev)
@@ -213,8 +285,26 @@ tamed void Phat_Interface::funlock(Handle f, tamer::event<Sequencer> ev)
   ev(Sequencer()); // FIXME: NYI
 }
 
-tamed void Phat_Interface::remove(Handle f, tamer::event<> ev)
+tamed void Phat_Interface::remove(Json args, tamer::event<Handle> ev)
 {
-  ev(); // FIXME: NYI
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
+
+  INFO() << "(API) remove called " << args;
+  args[0] = "remove";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "remove failed " << reply.json();
+  INFO() << "(API) remove returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
