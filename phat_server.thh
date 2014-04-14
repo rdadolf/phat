@@ -8,12 +8,14 @@ namespace phat {
 
 class Phat_Server
 {
+friend class paxos::Paxos_Proposer;
 friend class paxos::Paxos_Acceptor;
 private:
   tamer::event <> elect_me_;
   typedef enum { FILE=1, DIR } Filetype_t;
   int listen_port_;
   int master_;
+  int epoch_; // everything is going to start in epoch 0; once a master is elected, it moves to epoch 1
 
   // Paxos Stuff
   int paxos_port_;

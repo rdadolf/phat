@@ -3,6 +3,7 @@
 - Move to mmap persistence in Paxos
 - Implement fuzzy.
 - Implement random drop into modcomm.
+- Snapshot of fs to disk
 
 ## Questions
 - How do we address the ABA problem?

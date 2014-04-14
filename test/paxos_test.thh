@@ -15,5 +15,5 @@ tamed void run() {
         B.send_electme(make_event());
         C.send_electme(make_event());
     }
-    twait {tamer::at_delay(3,make_event()); }
+    twait {tamer::at_delay(5,make_event()); }
 }

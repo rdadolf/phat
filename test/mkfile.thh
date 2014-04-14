@@ -2,10 +2,11 @@ tamed void run() {
     tvars {
         puppet::Puppet A, B, C;
     }
-    C.spawn("./paxos_driver");
+    C.spawn("./paxos_driver -n 1 -P 15811");
     B.spawn("./server_driver -P 15807");
     sleep(1);
     twait { B.connect("localhost",15807,make_event()); }
+    twait { B.send_electme(make_event()); }
 
     A.spawn("./client_driver -P 15808");
     sleep(1);
@@ -13,6 +14,9 @@ tamed void run() {
 
     twait {
       A.send_mkfile("val", String("/test.txt"), String("test"),make_event());
+    }
+    twait { 
+      A.send_mkdir("val",String("/temp"),make_event());
     }
 
     twait {

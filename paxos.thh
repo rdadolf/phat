@@ -31,6 +31,8 @@ class Paxos_Proposer{
 public:
     typedef Paxos_Proposer ppropose_type;
 
+    phat::Phat_Server* me_;
+
     String hostname;
     std::vector<int> ports;
     std::vector<tamer::fd> cfd;
@@ -46,7 +48,8 @@ public:
     char* mapd;
 
 
-    Paxos_Proposer(int uid, const char* host,std::vector<int> ps,int f_i) :
+    Paxos_Proposer(phat::Phat_Server* me,int uid, const char* host,std::vector<int> ps,int f_i) :
+        me_(me),
         hostname(host), ports(ps),
         cfd(ps.size()),
         mpfd(ps.size()),

@@ -37,7 +37,7 @@ public:
   tamed void getroot(tamer::event<Handle> ev);
   tamed void open(Handle root, const String subpath, tamer::event<Handle> ev);
   tamed void mkfile(Json args, tamer::event<Handle> ev);
-  tamed void mkdir(Handle root, const String subpath, tamer::event<Handle> ev);
+  tamed void mkdir(Json args, tamer::event<Handle> ev);
   tamed void getcontents(Handle h, tamer::event<String> ev);
   tamed void putcontents(Handle h, const char *data, tamer::event<> ev);
   tamed void readdir(Handle h, tamer::event<String> ev);

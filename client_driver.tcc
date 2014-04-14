@@ -104,7 +104,13 @@ tamed void Client_Puppet::service_mkfile(Json args, tamer::event<> ev)
 
 tamed void Client_Puppet::service_mkdir(Json args, tamer::event<> ev)
 {
-  ev();
+  tvars {
+    Handle h;
+  }
+  INFO() << "Client servicing mkdir request";
+
+  twait{ phat_.mkdir(args,make_event(h)); }
+  ev(); 
 }
 
 tamed void Client_Puppet::service_getcontents(Json args, tamer::event<> ev)

@@ -145,6 +145,7 @@ tamed void Phat_Interface::mkfile(Json args, tamer::event<Handle> ev)
   }
 
   INFO() << "(API) mkfile called " << args;
+  args[0] = "mkfile";
   request = RPC_Msg(args);
   twait { master_fd_.call(request,make_event(reply.json())); }
   if (!master_fd_) {
@@ -159,10 +160,27 @@ tamed void Phat_Interface::mkfile(Json args, tamer::event<Handle> ev)
   ev(retval); // FIXME: NYI
 }
 
-tamed void Phat_Interface::mkdir(Handle root, const String subpath, tamer::event<Handle> ev)
+tamed void Phat_Interface::mkdir(Json args, tamer::event<Handle> ev)
 {
+  tvars { 
+    RPC_Msg request, reply;
+    Handle retval;
+  }
 
-  ev(Handle()); // FIXME: NYI
+  INFO() << "(API) mkdir called " << args;
+  args[0] = "mkdir";
+  request = RPC_Msg(args);
+  twait { master_fd_.call(request,make_event(reply.json())); }
+  if (!master_fd_) {
+    WARN() << "Master connection lost";
+    exit(-1);
+  }
+  if (reply.content()[0] == "ACK")
+    retval = reply.content()[1];
+  else
+    ERROR() << "Mkdir failed " << reply.json();
+  INFO() << "(API) mkdir returned " << retval;
+  ev(retval); // FIXME: NYI
 }
 
 tamed void Phat_Interface::getcontents(Handle h, tamer::event<String> ev)

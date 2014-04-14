@@ -89,3 +89,14 @@ Reply: `array( string root:"/" )`
 
 This should always return the same thing, unless something has gone wrong, in which case it might be a `"NACK"`.
 
+## Epoch Numbers
+
+Inspired by [Paxos Made Live](http://www.cs.utexas.edu/users/lorenzo/corsi/cs380d/papers/paper2-1.pdf).
+
+The need for epoch numbers arises from the fact that a master may think it's the master even when it is not (in the event of a master going down and coming back up, or just that someone else is elected while it is serving a client's request).
+
+Two requests for the same epoch number will return the same value if and only if the same replica has been master then entire time between the two requests.  
+
+The epoch number is stored within a phat_server, and is persisted to disk in the snapshot (**NYI**).
+
+We increase the epoch number every time a new master has been elected.  In order to ensure consistency across all replicas, we include the epoch number in all paxos instances.

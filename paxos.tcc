@@ -84,7 +84,12 @@ tamed void Paxos_Proposer::run_instance(Json _v,tamer::event<Json> done) {
     set_vc(_v);
     INFO() << "starting instance";;
 start:
-    
+    if(v_c[1].as_i() != me_->epoch_) { // replica is no longer master: shouldn't be sending 
+        assert(v_c[1].as_i() < me_->epoch_);
+        INFO() << "proposer's epoch number is behind in run_instance";
+        v_o = Json::array("NACK");
+        goto done;
+    }
     propose(n,v,r.make_event(false));
     tamer::at_delay_sec(4,r.make_event(true));
     twait(r,to);
@@ -106,10 +111,10 @@ start:
         goto start;
     }
     
-    req = RPC_Msg(Json::array(DECIDED,n_p,v_o));
+    req = RPC_Msg(Json::array(DECIDED,v_c[1].as_i(),n_p,v_o));
     send_to_all(req);
-    INFO() << "decided";;
-
+    INFO() << "decided" << req.content();;
+done:
     *done.result_pointer() = v_o;
     done.unblock();
 }
@@ -125,7 +130,7 @@ tamed void Paxos_Proposer::propose(int n, Json v, tamer::event<> done) {
     n_p = n_p + 1 + uid_; // FIXME : need uniqueifier 
     persist();
     n_o = a = 0;
-    req = RPC_Msg(Json::array(PREPARE,n_p));
+    req = RPC_Msg(Json::array(PREPARE,v_c[1].as_i(),n_p));
     INFO() << "propose: " << req.content();;
 
     for (i = 0; i < ports.size(); ++i)
@@ -160,7 +165,7 @@ tamed void Paxos_Proposer::accept(int n, tamer::event<> done) {
     INFO() << "accept";;
     n_p = std::max(n_o,n_p);
     persist();
-    req = RPC_Msg(Json::array(ACCEPT,n_p,v_o));
+    req = RPC_Msg(Json::array(ACCEPT,v_c[1].as_i(),n_p,v_o));
 
     for (i = 0; i < ports.size(); ++i)
         mpfd[i].call(req,r.make_event(i,res[i].json()));
@@ -170,7 +175,7 @@ tamed void Paxos_Proposer::accept(int n, tamer::event<> done) {
         assert(res[ret].content()[0].is_i() && res[ret].content()[1].is_i());
         n = res[ret].content()[1].as_i();
         if (res[ret].content()[0].as_i() != ACCEPTED || n != n_p) // should not count this one
-            --i;        
+            --i;
     }
 
     done();
@@ -202,28 +207,34 @@ tamed void Paxos_Acceptor::handle_request(tamer::fd cfd) {
     }
     while (cfd) {
         twait { mpfd.read_request(make_event(req.json())); }
-        if (!req.content().is_a()) {
+        if (!req.content().is_a() || req.content().size() <= 2
+            || !req.content()[0].is_i() || !req.content()[1].is_i()) {
             INFO() << "bad RPC: " << req.content();;
             break;
         }
+        if (me_->epoch_ != req.content()[1].as_i()) {// ignore request; proposer should time out and realize it's behind
+            INFO() << "proposer's epoch number is behind in acceptor";
+            continue;
+        }
+        
         switch(req.content()[0].as_i()) {
             case PREPARE:
-                INFO() << "prepare";;
-                assert(req.content().size() == 2);
-                n = req.content()[1].as_i();
+                INFO() << "prepare: " << req.content();;
+                assert(req.content().size() == 3);
+                n = req.content()[2].as_i();
                 prepare(mpfd,req,n);
                 break;
             case ACCEPT:
                 INFO() << "accept: " << req.content();;
-                assert(req.content().size() == 3 && req.content()[2].is_a());
-                n = req.content()[1].as_i();
-                v = req.content()[2];
+                assert(req.content().size() == 4 && req.content()[3].is_a());
+                n = req.content()[2].as_i();
+                v = req.content()[3];
                 accept(mpfd,req,n,v);
                 break;
             case DECIDED:
-                INFO() << "decided";;
-                assert(req.content().size() == 3 && req.content()[2].is_a());
-                v = req.content()[2];
+                INFO() << "decided: " << req.content();;
+                assert(req.content().size() == 4 && req.content()[3].is_a());
+                v = req.content()[3];
                 decided(mpfd,req,v);
                 break;
             default:
@@ -266,8 +277,9 @@ tamed void Paxos_Acceptor::decided(modcomm_fd& mpfd, RPC_Msg& req,Json v) {
     v_a = Json::make_array();
     if (v[0].is_s()) {
     if (v[0].as_s() == "master") {
-        assert(v[1].is_i());
-        me_->master_ = v[1].as_i();
+        assert(v[1].is_i() && v[2].is_i());
+        me_->master_ = v[2].as_i();
+        me_->epoch_ = v[1].as_i() + 1;
     // } else (v[0].as_s() == "file") {
     }}
     INFO() << "I, "<< me_->paxos_port_ << ", think I am master: " << me_->i_am_master();

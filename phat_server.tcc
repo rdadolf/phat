@@ -11,7 +11,7 @@
 
 using namespace phat;
 
-Phat_Server::Phat_Server(): master_(-1)
+Phat_Server::Phat_Server(): master_(-1), epoch_(0)
 {
   listen_port_ = 15810;
   paxos_port_ = 15811;
@@ -19,7 +19,7 @@ Phat_Server::Phat_Server(): master_(-1)
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port): master_(-1)
+Phat_Server::Phat_Server(int port): master_(-1), epoch_(0)
 {
   listen_port_ = port;
   paxos_port_ = 15811;
@@ -27,7 +27,7 @@ Phat_Server::Phat_Server(int port): master_(-1)
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port, int paxos, int pm): master_(-1) {
+Phat_Server::Phat_Server(int port, int paxos, int pm): master_(-1), epoch_(0) {
   listen_port_ = port;
   paxos_port_ = paxos;
   paxos_master_ = pm;
@@ -74,7 +74,7 @@ tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
   // initialize paxos
   acceptor_ = new paxos::Paxos_Acceptor(this,paxos_port_);
   acceptor_->acceptor_init(e);
-  proposer_ = new paxos::Paxos_Proposer(paxos_port_,"localhost",paxi_,paxi_.size() / 2);
+  proposer_ = new paxos::Paxos_Proposer(this,paxos_port_,"localhost",paxi_,paxi_.size() / 2);
   twait { proposer_->proposer_init(make_event()); }
   ev();
 }
@@ -142,6 +142,7 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
     if(!mpfd)
       break;
     if( request.validate() ) {
+      INFO() << "phat server got: " << request.content();
       if( request.content()[0]=="get_master" ) {
         reply = RPC_Msg( get_master(request.content()), request );
       } else if( request.content()[0]=="get_replica_list" ) {
@@ -150,8 +151,8 @@ tamed void Phat_Server::read_and_dispatch(tamer::fd client_fd)
         reply = RPC_Msg( getroot(request.content()), request );
       } else if( request.content()[0].as_s() =="mkfile" ) {
         reply = RPC_Msg( mkfile(request.content()[1]) , request);
-      // } else if( request.content()[0]=="mkdir" ) {
-      //   reply = RPC_Msg ( mkdir(request.content()[1]) , request);
+      } else if( request.content()[0]=="mkdir" ) {
+        reply = RPC_Msg ( mkdir(request.content()[1]) , request);
       // } else if( request.content()[0]=="getcontents" ) {
       //   reply = RPC_Msg( getcontents(request.content()[1]) , request);
       // } else if( request.content()[0]=="putcontents" ) {
@@ -182,7 +183,7 @@ tamed void Phat_Server::elect_me(tamer::event<Json> ev) {
   tvars{
     Json v;
   }
-  v = Json::array("master",paxos_port_);
+  v = Json::array("master",epoch_,paxos_port_);
   INFO() << "Elect: "<< paxos_port_;
   twait {proposer_->run_instance(v,make_event(*ev.result_pointer())); }
   ev.unblock();
@@ -231,6 +232,7 @@ Json Phat_Server::mkfile(Json args) {
 }
 
 Json Phat_Server::mkdir(Json args) {
+    INFO () << "in mkdir in puppet server!";
     if (args.size() != 1 || !args[0].is_s())
       return Json::array("NACK");
     const char* subpath = args[0].as_s().c_str();
