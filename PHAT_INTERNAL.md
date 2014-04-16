@@ -85,9 +85,17 @@ Could be one of two replies. The `"NACK"` form is a general type of message that
 #### getroot
 
 Request: `array( string tag:"getroot" )`
-Reply: `array( string root:"/" )`
+Reply: `array( string tag:"ACK", string root:"/" )`
 
 This should always return the same thing, unless something has gone wrong, in which case it might be a `"NACK"`.
+
+#### mkfile
+
+Request: `array( string tag:"mkfile", string subpath:"...", string data:"..." )`
+Reply: `array( string tag:"ACK", string handle:"<path>" )`
+
+The second argument is a handle type corresponding to the new file.
+
 
 ## Epoch Numbers
 
