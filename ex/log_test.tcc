@@ -3,19 +3,18 @@
 #include "log.hh"
 
 class test {
-    NameID_Log log;
 public:
     test();
-    test(const char* name,int port): log(name,port) {}
+    test(const char* name,int port) {}
     tamed void test_log(tamer::event<> done);
     tamed void test_log2(tamer::event<> done);
     void test2(void) {
-        log << "test2";
+        INFO() << "test2";
     }
 };
 
 tamed void test::test_log(tamer::event<> done) {
-    log << "test";
+    INFO() << "test";
     done();
 }
 
