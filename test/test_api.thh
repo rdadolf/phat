@@ -17,7 +17,16 @@ tamed void run() {
         s += String(15900 + i);
         rs[i].spawn(s.c_str());
     }
-    sleep(1);
+    sleep(3);
+    // need to inform client of who master is
+    B.spawn("./client_driver -P 14808");
+    std::cout << "here1" << std::endl;
+    twait { tamer::at_delay(1,make_event()); }
+    std::cout << "here2" << std::endl;
+    twait { B.connect("localhost",14808,make_event()); }
+    std::cout << "here3" << std::endl;
+    // twait { B.send_getroot("val", make_event()); }
+    // twait { A.send_mkfile("val", String("/test.txt"), String("test"),make_event()); }
     twait {tamer::at_delay(5,make_event()); }
     rs.clear();
 }

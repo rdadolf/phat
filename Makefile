@@ -107,3 +107,4 @@ clean:
 	rm -rf *.dSYM
 	rm -f $(CPP_TEMPS)
 	rm -f $(HPP_TEMPS)
+	rm -f test/*.hh

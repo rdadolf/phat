@@ -33,6 +33,7 @@ public:
   void spawn(String command);
   tamed void connect(String hostname, int port, tamer::event<> ev);
   void disconnect();
+  void kill_child();
 
   // Basic operations
   tamed void send_print(String name, tamer::event<> ev);
@@ -84,7 +85,14 @@ void Puppet::spawn(String command)
   } // else parent
 }
 
-
+void Puppet::kill_child() {
+  disconnect();
+  if (child_process_>0) {
+    INFO() << "Sending SIGTERM to process " << child_process_;
+    kill(child_process_,SIGTERM);
+    waitpid(child_process_,NULL,WEXITED);
+  }
+}
 
 tamed void Puppet::connect(String hostname, int port, tamer::event<> ev)
 {

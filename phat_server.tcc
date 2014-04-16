@@ -11,7 +11,12 @@
 
 using namespace phat;
 
-Phat_Server::Phat_Server(): master_(-1), epoch_(0)
+int rand_int(double min, double max) {
+    double ret = ((double) rand() / ((double)RAND_MAX+1)) * (max-min) + min;
+    return (int) ret;
+}
+
+Phat_Server::Phat_Server(): master_(-1),master_timeout_(5), epoch_(0)
 {
   listen_port_ = 15810;
   paxos_port_ = 15811;
@@ -19,7 +24,7 @@ Phat_Server::Phat_Server(): master_(-1), epoch_(0)
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port): master_(-1), epoch_(0)
+Phat_Server::Phat_Server(int port): master_(-1),master_timeout_(5), epoch_(0)
 {
   listen_port_ = port;
   paxos_port_ = 15811;
@@ -27,7 +32,7 @@ Phat_Server::Phat_Server(int port): master_(-1), epoch_(0)
   run_master_server();
 }
 
-Phat_Server::Phat_Server(int port, int paxos, int pm): master_(-1), epoch_(0) {
+Phat_Server::Phat_Server(int port, int paxos, int pm): master_(-1),master_timeout_(5), epoch_(0) {
   listen_port_ = port;
   paxos_port_ = paxos;
   paxos_master_ = pm;
@@ -41,9 +46,13 @@ void Phat_Server::fs_init() {
 
 tamed void Phat_Server::run_master_server()
 {
+  tvars { Json j; }
   INFO() << "Running phat master server";
   fs_init();
   twait { get_paxos_group(make_event()); }
+  twait { tamer::at_delay(rand_int(0,master_timeout_),make_event()); }
+  if (master_ < 0) 
+    twait { elect_me(make_event(j)); }
   listen_for_heartbeats();
   handle_new_connections(listen_port_);
 }
@@ -58,6 +67,7 @@ tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
     RPC_Msg req, res;
     unsigned i;
     tamer::event<> e;
+    std::vector<int> acceptors;
   }
   twait { connect("localhost",paxos_master_,make_event(paxm_mpfd_)); }
   req = RPC_Msg(Json::array("ports"));
@@ -68,14 +78,15 @@ tamed void Phat_Server::get_paxos_group(tamer::event<> ev) {
   }
   INFO() << "Got paxos group: " << res.content()[1];
   assert(res.content()[1].is_a());
-  for (i = 0; i < res.content()[1].size(); ++i) {
-    assert(res.content()[1][i].is_i());
-    paxi_.push_back(res.content()[1][i].as_i());
+  paxi_ = res.content()[1];
+  for (i = 0; i < paxi_.size(); ++i) {
+    assert(paxi_[i][0].is_i() && paxi_[i][1].is_i());
+    acceptors.push_back(paxi_[i][0].as_i());
   }
   // initialize paxos
   acceptor_ = new paxos::Paxos_Acceptor(this,paxos_port_);
   acceptor_->acceptor_init(e);
-  proposer_ = new paxos::Paxos_Proposer(this,paxos_port_,"localhost",paxi_,paxi_.size() / 2);
+  proposer_ = new paxos::Paxos_Proposer(this,paxos_port_,"localhost",acceptors,acceptors.size() / 2);
   twait { proposer_->proposer_init(make_event()); }
   ev();
 }
@@ -87,10 +98,11 @@ tamed void Phat_Server::listen_for_heartbeats() {
   }
   // an event is considered empty if nothing is waiting on it...
   while (1) {
-    tamer::at_delay(5,elect_me_.make_event(true));
+    tamer::at_delay(master_timeout_,elect_me_.make_event(true));
     twait(elect_me_,em);
     if (em) {
       elect_me_.clear();
+      INFO() << "master timed out";
       twait { elect_me(tamer::make_event(j)); }
     }
   }
@@ -355,7 +367,14 @@ Json Phat_Server::get_master(Json args)
     return Json::array(String("ACK"));
   } else {
     // FIXME: Report real master.
-    return Json::array(String("NACK"),String("NOT_MASTER"),-1,-1);
+    int port = -1;
+    for (int i = 0; i < paxi_.size(); ++i) {
+      if (paxi_[i][0].as_i() == master_) {
+        port = paxi_[i][1].as_i(); 
+        break;
+      }
+    }
+    return Json::array(String("NACK"),String("NOT_MASTER"),String("localhost"),port);
   }
 }
 

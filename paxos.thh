@@ -197,11 +197,13 @@ private:
 public:
     Paxos_Master() : _port(18000) {
     }
-    Paxos_Master(int port, std::vector<int> ports) : 
+    Paxos_Master(int port, std::vector<int> paxos_ports, std::vector<int> server_ports) : 
         _port(port){
 
-        for (std::vector<int>::size_type i = 0; i < ports.size(); ++i)
-            _ports.push_back(ports[i]);
+        for (std::vector<int>::size_type i = 0; i < paxos_ports.size(); ++i) {
+            Json j = Json::array(paxos_ports[i],server_ports[i]);
+            _ports.push_back(j);
+        }
     }
     tamed void listen(tamer::event<> ev);
     tamed void handle_request(tamer::fd cfd);

@@ -15,13 +15,14 @@ private:
   typedef enum { FILE=1, DIR } Filetype_t;
   int listen_port_;
   int master_;
+  int master_timeout_;
   int epoch_; // everything is going to start in epoch 0; once a master is elected, it moves to epoch 1
 
   // Paxos Stuff
   int paxos_port_;
   int paxos_master_;
   msgpack_fd paxm_mpfd_;
-  std::vector<int> paxi_;
+  Json paxi_;
   paxos::Paxos_Proposer* proposer_;
   paxos::Paxos_Acceptor* acceptor_;
 
